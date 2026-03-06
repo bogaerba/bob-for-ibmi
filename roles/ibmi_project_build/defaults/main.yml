@@ -1,0 +1,28 @@
+---
+# Default variables for ibmi_project_build role
+
+# Project directory (where repository was cloned)
+project_dir: "{{ repository_dest }}"
+
+# Build command to execute
+build_command: "/QOpenSys/pkgs/bin/makei build"
+
+# Build log file location
+build_log: "{{ project_dir }}/build.log"
+
+# Build timeout in seconds (10 minutes)
+build_timeout: 600
+
+# Whether to force a clean rebuild
+force_rebuild: false
+
+# makei executable path
+makei_executable: "/QOpenSys/pkgs/bin/makei"
+
+# Build artifact patterns to search for
+build_artifact_patterns:
+  - "*.pgm"
+  - "*.srvpgm"
+  - "*.bnddir"
+
+# Made with Bob

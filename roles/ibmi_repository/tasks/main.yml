@@ -1,0 +1,144 @@
+---
+# Role: ibmi_repository
+# Purpose: Clone the IBM i company system repository
+
+- name: Verify git is installed
+  ansible.builtin.command: /QOpenSys/pkgs/bin/git --version
+  register: git_check
+  changed_when: false
+  failed_when: git_check.rc != 0
+  tags: [repository, git, verify]
+
+- name: Display git version
+  ansible.builtin.debug:
+    msg: "Git is available: {{ git_check.stdout }}"
+  tags: [repository, git, verify]
+
+- name: Check if repository already exists
+  ansible.builtin.stat:
+    path: "{{ repository_dest }}"
+  register: repo_check
+  tags: [repository, git]
+
+- name: Display repository status
+  ansible.builtin.debug:
+    msg: "Repository {{ 'already exists' if repo_check.stat.exists else 'will be cloned' }}"
+  tags: [repository, git]
+
+- name: Clone repository if not present
+  ansible.builtin.git:
+    repo: "{{ repository_url }}"
+    dest: "{{ repository_dest }}"
+    version: "{{ repository_version }}"
+    force: "{{ repository_force }}"
+  when: not repo_check.stat.exists
+  register: repo_clone
+  tags: [repository, git, clone]
+
+- name: Update repository if already cloned
+  ansible.builtin.git:
+    repo: "{{ repository_url }}"
+    dest: "{{ repository_dest }}"
+    version: "{{ repository_version }}"
+    update: true
+    force: "{{ repository_force }}"
+  when: repo_check.stat.exists
+  register: repo_update
+  tags: [repository, git, update]
+
+- name: Display clone/update result
+  ansible.builtin.debug:
+    msg: "Repository {{ 'cloned' if repo_clone.changed else 'updated' if repo_update.changed else 'already up-to-date' }}"
+  tags: [repository, git]
+
+- name: Get current repository information
+  ansible.builtin.command: /QOpenSys/pkgs/bin/git -C {{ repository_dest }} log -1 --format="%H %s"
+  register: repo_info
+  changed_when: false
+  tags: [repository, git, info]
+
+- name: Display repository information
+  ansible.builtin.debug:
+    msg: "Current commit: {{ repo_info.stdout }}"
+  tags: [repository, git, info]
+
+- name: Get repository branch
+  ansible.builtin.command: /QOpenSys/pkgs/bin/git -C {{ repository_dest }} branch --show-current
+  register: repo_branch
+  changed_when: false
+  tags: [repository, git, info]
+
+- name: Display current branch
+  ansible.builtin.debug:
+    msg: "Current branch: {{ repo_branch.stdout }}"
+  tags: [repository, git, info]
+
+- name: Set correct ownership for repository
+  ansible.builtin.file:
+    path: "{{ repository_dest }}"
+    owner: "{{ target_user }}"
+    recurse: true
+    state: directory
+  tags: [repository, permissions]
+
+- name: Set correct permissions for repository
+  ansible.builtin.file:
+    path: "{{ repository_dest }}"
+    mode: '0755'
+    state: directory
+  tags: [repository, permissions]
+
+- name: Verify repository integrity
+  ansible.builtin.command: /QOpenSys/pkgs/bin/git -C {{ repository_dest }} status
+  register: repo_status
+  changed_when: false
+  tags: [repository, verify]
+
+- name: Display repository status
+  ansible.builtin.debug:
+    msg: "{{ repo_status.stdout_lines }}"
+  tags: [repository, verify]
+
+- name: Check for important files in repository
+  ansible.builtin.stat:
+    path: "{{ repository_dest }}/{{ item }}"
+  loop:
+    - README.md
+    - makefile
+    - .git
+  register: important_files
+  tags: [repository, verify]
+
+- name: Verify important files exist
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+    fail_msg: "Important file {{ item.item }} not found in repository"
+    success_msg: "File {{ item.item }} exists"
+  loop: "{{ important_files.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  tags: [repository, verify]
+
+- name: Create repository summary
+  ansible.builtin.set_fact:
+    repository_summary:
+      url: "{{ repository_url }}"
+      destination: "{{ repository_dest }}"
+      branch: "{{ repo_branch.stdout }}"
+      latest_commit: "{{ repo_info.stdout }}"
+      status: "{{ 'cloned' if repo_clone.changed else 'updated' if repo_update.changed else 'up-to-date' }}"
+  tags: [repository]
+
+- name: Display repository setup summary
+  ansible.builtin.debug:
+    msg:
+      - "Repository setup completed successfully"
+      - "URL: {{ repository_summary.url }}"
+      - "Location: {{ repository_summary.destination }}"
+      - "Branch: {{ repository_summary.branch }}"
+      - "Status: {{ repository_summary.status }}"
+      - "Latest commit: {{ repository_summary.latest_commit }}"
+  tags: [repository]
+
+# Made with Bob

@@ -1,0 +1,116 @@
+---
+# Global variables for IBM i LPAR setup
+# These variables are available to all hosts and roles
+
+# Target user configuration
+target_user: "{{ ansible_user }}"
+target_home: "/home/{{ target_user }}"
+
+# IBM i system configuration
+required_ibmi_version: "7.5"
+
+# Repository configuration
+repository_url: "https://github.com/IBM/ibmi-company_system"
+repository_dest: "{{ target_home }}/ibmi-company_system"
+repository_version: "main"
+repository_force: false
+
+# Database configuration
+sql_schema: "CMPSYS"
+sql_command: "CALL QSYS.CREATE_SQL_SAMPLE('{{ sql_schema }}')"
+
+# Build configuration
+project_dir: "{{ repository_dest }}"
+build_command: "/QOpenSys/pkgs/bin/makei build"
+build_log: "{{ project_dir }}/build.log"
+build_timeout: 600
+
+# Bash profile configuration
+bash_profile_path: "{{ target_home }}/.bash_profile"
+bash_ps1: '\e[1;34m[\u@\h \W]\$ \e[m'
+bash_path: '/QOpenSys/pkgs/bin:$PATH'
+bash_lang: 'EN_US.UTF-8'
+backup_suffix: '.ansible-backup'
+
+# YUM configuration
+yum_binary: "/QOpenSys/pkgs/bin/yum"
+bootstrap_url: "https://public.dhe.ibm.com/software/ibmi/products/pase/rpms/bootstrap.sh"
+
+# Required packages
+required_packages:
+  - git
+  - tn5250
+  - service-commander
+  - mapepire-server
+  - rsync
+  - ibmichroot
+  - nano
+  - tobi
+
+# Required directories
+required_directories:
+  - "{{ target_home }}"
+
+# Ansible execution settings
+ansible_shell_executable: /QOpenSys/pkgs/bin/bash
+
+# ============================================================================
+# Python Interpreter Configuration - Two-Phase Bootstrap Approach
+# ============================================================================
+#
+# This configuration uses a two-phase bootstrap approach to handle Python
+# interpreter setup on IBM i systems:
+#
+# PHASE 1 - BOOTSTRAP (Uses system Python):
+#   - Interpreter: /QOpenSys/pkgs/bin/python3 (system default)
+#   - Purpose: Install prerequisites, YUM, and Python 3.9
+#   - Roles: ibmi_prerequisites, ibmi_yum_setup, ibmi_packages
+#
+# PHASE 2 - CONFIGURATION (Uses Python 3.9):
+#   - Interpreter: /QOpenSys/pkgs/bin/python3.9 (newly installed)
+#   - Purpose: Configure system using Python 3.9 features
+#   - Roles: ibmi_bash_profile, ibmi_repository, ibmi_database, ibmi_project_build
+#
+# WHY THIS APPROACH?
+# - Prevents "SyntaxError: future feature annotations is not defined" errors
+# - System Python (often 3.6) is used to install Python 3.9
+# - Once Python 3.9 is installed, we switch to it for remaining tasks
+# - This allows the playbook to work on fresh IBM i systems without Python 3.9
+#
+# CONFIGURATION HIERARCHY:
+# 1. This file sets the default to system Python (/QOpenSys/pkgs/bin/python3)
+# 2. site.yml overrides this per-play:
+#    - Play 1: ansible_python_interpreter: /QOpenSys/pkgs/bin/python3
+#    - Play 2: ansible_python_interpreter: /QOpenSys/pkgs/bin/python3.9
+# 3. Inventory files (hosts.yml) also default to system Python
+#
+# DEFAULT INTERPRETER (used for Phase 1):
+ansible_python_interpreter: /QOpenSys/pkgs/bin/python3
+
+# PYTHON VERSION REQUIREMENTS:
+# - System Python: /QOpenSys/pkgs/bin/python3 (usually Python 3.6+)
+#   - Pre-installed on most IBM i systems
+#   - Used for bootstrap phase only
+#
+# - Python 3.9: /QOpenSys/pkgs/bin/python3.9
+#   - Installed during Phase 1 by ibmi_packages role
+#   - Used for Phase 2 configuration tasks
+#   - Required for modern Ansible modules and Python features
+#
+# INSTALLATION:
+# Python 3.9 is automatically installed by the playbook via:
+#   yum install python39
+#
+# VERIFICATION:
+# To verify Python versions on IBM i:
+#   ssh user@ibmi-host "/QOpenSys/pkgs/bin/python3 --version"
+#   ssh user@ibmi-host "/QOpenSys/pkgs/bin/python3.9 --version"
+#
+# COMMON PYTHON PATHS ON IBM i:
+# - /QOpenSys/pkgs/bin/python3 (system default, usually symlink to latest)
+# - /QOpenSys/pkgs/bin/python3.6 (older system Python)
+# - /QOpenSys/pkgs/bin/python3.9 (target version for this playbook)
+# - /QOpenSys/pkgs/bin/python3.11 (newer version, if installed)
+# ============================================================================
+
+# Made with Bob

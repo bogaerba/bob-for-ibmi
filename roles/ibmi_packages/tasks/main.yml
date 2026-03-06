@@ -1,0 +1,119 @@
+---
+# Role: ibmi_packages
+# Purpose: Install required open-source packages
+
+- name: Update YUM package cache
+  ansible.builtin.command: "{{ yum_binary }} makecache"
+  register: cache_update
+  changed_when: "'Metadata cache created' in cache_update.stdout"
+  retries: 3
+  delay: 10
+  until: cache_update is succeeded
+  tags: [packages, update]
+
+- name: Check which packages are already installed
+  ansible.builtin.command: "{{ yum_binary }} list installed {{ item }}"
+  loop: "{{ required_packages }}"
+  register: package_check
+  changed_when: false
+  failed_when: false
+  tags: [packages, check]
+
+- name: Display package installation status
+  ansible.builtin.debug:
+    msg: "Package {{ item.item }} is {{ 'already installed' if item.rc == 0 else 'not installed' }}"
+  loop: "{{ package_check.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  tags: [packages, check]
+
+- name: Install required packages
+  ansible.builtin.command: "{{ yum_binary }} install -y {{ item }}"
+  loop: "{{ required_packages }}"
+  register: package_install
+  changed_when: "'Nothing to do' not in package_install.stdout"
+  failed_when: package_install.rc != 0
+  retries: 2
+  delay: 5
+  until: package_install is succeeded
+  tags: [packages, install]
+
+- name: Display package installation results
+  ansible.builtin.debug:
+    msg: "Package {{ item.item }}: {{ 'Installed' if item.changed else 'Already present' }}"
+  loop: "{{ package_install.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  tags: [packages, install]
+
+- name: Verify all packages are installed
+  ansible.builtin.command: "{{ yum_binary }} list installed {{ item }}"
+  loop: "{{ required_packages }}"
+  register: package_verify
+  changed_when: false
+  failed_when: package_verify.rc != 0
+  tags: [packages, verify]
+
+- name: Get installed package versions
+  ansible.builtin.shell: |
+    {{ yum_binary }} list installed {{ required_packages | join(' ') }} | grep -E "{{ required_packages | join('|') }}"
+  register: package_versions
+  changed_when: false
+  failed_when: false
+  tags: [packages, verify]
+
+- name: Display installed package versions
+  ansible.builtin.debug:
+    msg: "{{ package_versions.stdout_lines }}"
+  when: package_versions.stdout_lines is defined
+  tags: [packages, verify]
+
+- name: Verify git installation
+  ansible.builtin.command: /QOpenSys/pkgs/bin/git --version
+  register: git_version
+  changed_when: false
+  tags: [packages, verify, git]
+
+- name: Display git version
+  ansible.builtin.debug:
+    msg: "Git version: {{ git_version.stdout }}"
+  tags: [packages, verify, git]
+
+- name: Verify nano installation
+  ansible.builtin.command: /QOpenSys/pkgs/bin/nano --version
+  register: nano_version
+  changed_when: false
+  tags: [packages, verify, nano]
+
+- name: Display nano version
+  ansible.builtin.debug:
+    msg: "Nano version: {{ nano_version.stdout_lines[0] }}"
+  tags: [packages, verify, nano]
+
+- name: Create package installation summary
+  ansible.builtin.set_fact:
+    package_summary:
+      total_packages: "{{ required_packages | length }}"
+      installed_packages: "{{ required_packages }}"
+      git_version: "{{ git_version.stdout }}"
+      installation_complete: true
+  tags: [packages]
+
+- name: Display package installation summary
+  ansible.builtin.debug:
+    msg:
+      - "Package installation completed successfully"
+      - "Total packages installed: {{ package_summary.total_packages }}"
+      - "Packages: {{ package_summary.installed_packages | join(', ') }}"
+      - "Git version: {{ package_summary.git_version }}"
+  tags: [packages]
+
+- name: Record package installation in log file
+  ansible.builtin.lineinfile:
+    path: "{{ target_home }}/.ibmi-bob-packages.log"
+    line: "{{ ansible_date_time.iso8601 }} - Installed packages: {{ required_packages | join(', ') }}"
+    create: true
+    mode: '0644'
+  tags: [packages, logging]
+
+# Made with Bob

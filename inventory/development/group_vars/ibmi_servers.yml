@@ -1,0 +1,79 @@
+---
+# Development IBM i Servers Group Variables
+#
+# These variables apply to all hosts in the ibmi_servers group in development.
+# They can be overridden at the host level in hosts.yml if needed.
+
+# Connection Settings
+# -------------------
+# These are typically set at the host level, but can be defined here for consistency
+# ansible_user: ansible_user
+# ansible_ssh_private_key_file: ~/.ssh/id_rsa_ibmi_dev
+
+# IBM i Connection Parameters
+ansible_shell_type: sh
+ansible_shell_executable: /QOpenSys/pkgs/bin/bash
+ansible_python_interpreter: /QOpenSys/pkgs/bin/python3
+
+# SSH Connection Settings
+ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+ansible_connection: ssh
+ansible_port: 22
+
+# Performance Settings
+ansible_ssh_pipelining: true
+ansible_ssh_transfer_method: scp
+
+# Environment
+ibmi_environment: development
+
+# Repository Configuration (Development)
+# ---------------------------------------
+repository_url: "https://github.com/IBM/ibmi-company_system"
+repository_branch: "main"
+repository_dest: "/home/{{ ansible_user }}/ibmi-company_system"
+
+# Database Configuration (Development)
+# -------------------------------------
+database_name: "DEVDB"
+database_library: "DEVLIB"
+database_backup_enabled: false
+database_backup_retention_days: 7
+
+# Build Configuration (Development)
+# ----------------------------------
+build_environment: "development"
+build_optimization_level: "*NONE"
+build_debug_enabled: true
+
+# Package Management (Development)
+# ---------------------------------
+yum_repos_enabled: true
+package_update_cache: true
+package_install_timeout: 600
+
+# Security Settings (Development)
+# --------------------------------
+security_audit_enabled: false
+security_log_level: "DEBUG"
+
+# Notification Settings (Development)
+# ------------------------------------
+# notification_email: "dev-team@example.com"
+# notification_slack_webhook: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+
+# Development-Specific Settings
+# ------------------------------
+# Enable verbose logging for troubleshooting
+ansible_verbosity: 1
+
+# Allow experimental features
+experimental_features_enabled: true
+
+# Custom Variables
+# ----------------
+# Add any development-specific variables here
+# custom_var_1: "dev_value1"
+# custom_var_2: "dev_value2"
+
+# Made with Bob

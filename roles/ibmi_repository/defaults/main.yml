@@ -1,0 +1,22 @@
+---
+# Default variables for ibmi_repository role
+
+# Repository URL
+repository_url: "https://github.com/IBM/ibmi-company_system"
+
+# Repository destination path
+repository_dest: "{{ target_home }}/ibmi-company_system"
+
+# Repository version (branch, tag, or commit)
+repository_version: "main"
+
+# Whether to discard local changes when updating
+repository_force: false
+
+# Whether to update existing repository
+repository_update: true
+
+# Git executable path
+git_executable: "/QOpenSys/pkgs/bin/git"
+
+# Made with Bob

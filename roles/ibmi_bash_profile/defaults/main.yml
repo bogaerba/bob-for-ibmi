@@ -1,0 +1,32 @@
+---
+# Default variables for ibmi_bash_profile role
+
+# Bash profile file path
+bash_profile_path: "{{ target_home }}/.bash_profile"
+
+# PS1 prompt configuration
+# Format: [user@host directory]$ in blue color
+bash_ps1: '\e[1;34m[\u@\h \W]\$ \e[m'
+
+# PATH configuration
+# Prepends /QOpenSys/pkgs/bin to existing PATH
+bash_path: '/QOpenSys/pkgs/bin:$PATH'
+
+# LANG configuration
+# UTF-8 encoding for modern tools
+bash_lang: 'EN_US.UTF-8'
+
+# CURLIB configuration
+# Sets the current library for IBM i makei builds
+# Defaults to sql_schema to ensure consistency with database operations
+bash_curlib: "{{ sql_schema }}"
+
+# Backup suffix for existing profile
+backup_suffix: '.ansible-backup'
+
+# Optional custom content to append to profile
+# bash_profile_custom_content: |
+#   # Custom aliases
+#   alias ll='ls -la'
+
+# Made with Bob

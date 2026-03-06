@@ -1,0 +1,118 @@
+---
+# Role: ibmi_prerequisites
+# Purpose: Verify system prerequisites and prepare the environment
+
+- name: Verify SSH connectivity
+  ansible.builtin.ping:
+  register: ping_result
+  tags: [prerequisites, connectivity]
+
+- name: Display connectivity status
+  ansible.builtin.debug:
+    msg: "SSH connectivity verified successfully"
+  when: ping_result is succeeded
+  tags: [prerequisites, connectivity]
+
+- name: Gather IBM i system facts
+  ansible.builtin.setup:
+    gather_subset:
+      - '!all'
+      - '!min'
+      - system
+  tags: [prerequisites, facts]
+
+- name: Check IBM i version
+  ansible.builtin.shell: |
+    system "DSPSFWRSC" | grep -i "5770SS1" | head -1
+  args:
+    executable: /QOpenSys/pkgs/bin/bash
+  register: ibmi_version_check
+  changed_when: false
+  failed_when: false
+  tags: [prerequisites, version]
+
+- name: Display IBM i version information
+  ansible.builtin.debug:
+    msg: "IBM i system information: {{ ibmi_version_check.stdout | default('Version check unavailable') }}"
+  tags: [prerequisites, version]
+
+- name: Verify PASE environment is accessible
+  ansible.builtin.command: /QOpenSys/usr/bin/uname -a
+  register: pase_check
+  changed_when: false
+  tags: [prerequisites, pase]
+
+- name: Display PASE environment status
+  ansible.builtin.debug:
+    msg: "PASE environment: {{ pase_check.stdout }}"
+  tags: [prerequisites, pase]
+
+- name: Check if bash shell exists
+  ansible.builtin.stat:
+    path: /QOpenSys/pkgs/bin/bash
+  register: bash_check
+  tags: [prerequisites, bash]
+
+- name: Verify bash shell availability
+  ansible.builtin.assert:
+    that:
+      - bash_check.stat.exists
+      - bash_check.stat.executable
+    fail_msg: "Bash shell not found at /QOpenSys/pkgs/bin/bash. Please install bash first."
+    success_msg: "Bash shell is available"
+  tags: [prerequisites, bash]
+
+- name: Check user home directory
+  ansible.builtin.stat:
+    path: "{{ target_home }}"
+  register: home_check
+  tags: [prerequisites, directories]
+
+- name: Create user home directory if not exists
+  ansible.builtin.file:
+    path: "{{ target_home }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ target_user }}"
+  when: not home_check.stat.exists
+  tags: [prerequisites, directories]
+
+- name: Verify required directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ target_user }}"
+  loop: "{{ required_directories }}"
+  tags: [prerequisites, directories]
+
+- name: Check user authorities
+  ansible.builtin.command: /QOpenSys/usr/bin/id
+  register: user_authorities
+  changed_when: false
+  tags: [prerequisites, authorities]
+
+- name: Display user authorities
+  ansible.builtin.debug:
+    msg: "User authorities: {{ user_authorities.stdout }}"
+  tags: [prerequisites, authorities]
+
+- name: Create temporary working directory
+  ansible.builtin.file:
+    path: "{{ target_home }}/.ansible-tmp"
+    state: directory
+    mode: '0700'
+    owner: "{{ target_user }}"
+  tags: [prerequisites, directories]
+
+- name: Prerequisites verification complete
+  ansible.builtin.debug:
+    msg:
+      - "Prerequisites verification completed successfully"
+      - "User: {{ target_user }}"
+      - "Home: {{ target_home }}"
+      - "PASE: Available"
+      - "Bash: Available"
+  tags: [prerequisites]
+
+# Made with Bob

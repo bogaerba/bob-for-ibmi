@@ -1,0 +1,17 @@
+---
+# Default variables for ibmi_prerequisites role
+
+# IBM i version requirements
+required_ibmi_version: "7.5"
+
+# Required directories (can be overridden)
+required_directories:
+  - "{{ target_home }}"
+
+# Timeout for prerequisite checks (seconds)
+prerequisite_check_timeout: 30
+
+# Whether to fail on version mismatch
+strict_version_check: false
+
+# Made with Bob

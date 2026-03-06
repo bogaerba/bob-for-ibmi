@@ -1,0 +1,151 @@
+---
+# Example IBM i Inventory Template
+#
+# This file demonstrates all possible configuration options for IBM i hosts.
+# Copy this file to create your own inventory (e.g., production/hosts.yml or development/hosts.yml)
+# and customize it for your environment.
+
+all:
+  children:
+    # Main IBM i servers group
+    ibmi_servers:
+      hosts:
+        # Example Host with All Options
+        ibmi-example-01:
+          # Required: Hostname or IP address
+          ansible_host: 192.168.1.100
+          
+          # Required: SSH user with appropriate permissions
+          ansible_user: ansible_user
+          
+          # Required: SSH private key for authentication
+          ansible_ssh_private_key_file: ~/.ssh/id_rsa_ibmi
+          
+          # IBM i Specific Connection Settings (Required)
+          # -----------------------------------------------
+          # IBM i uses PASE shell, not the traditional IBM i command line
+          ansible_shell_type: sh
+          ansible_shell_executable: /QOpenSys/pkgs/bin/bash
+          ansible_python_interpreter: /QOpenSys/pkgs/bin/python3.9
+          
+          # Connection Settings (Optional)
+          # -------------------------------
+          ansible_connection: ssh
+          ansible_port: 22
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+          
+          # Performance Settings (Optional)
+          # --------------------------------
+          ansible_ssh_pipelining: true
+          ansible_ssh_transfer_method: scp
+          ansible_timeout: 30
+          
+          # Host-Specific Variables (Optional)
+          # -----------------------------------
+          ibmi_system_name: EXAMPLE01
+          ibmi_environment: example
+          ibmi_location: datacenter-1
+          ibmi_owner: team-name
+          
+          # Repository Settings (Optional - can override group_vars)
+          # ---------------------------------------------------------
+          repository_url: "https://github.com/your-org/your-project.git"
+          repository_branch: "main"
+          repository_dest: "/home/{{ ansible_user }}/projects/example"
+          
+          # Database Settings (Optional - can override group_vars)
+          # -------------------------------------------------------
+          database_name: "EXAMPLEDB"
+          database_library: "EXAMPLELIB"
+          database_backup_enabled: true
+          
+          # Build Settings (Optional - can override group_vars)
+          # ----------------------------------------------------
+          build_environment: "example"
+          build_optimization_level: "*FULL"
+          build_debug_enabled: false
+
+        # Minimal Example Host (Only Required Settings)
+        ibmi-minimal-01:
+          ansible_host: 192.168.1.101
+          ansible_user: ansible_user
+          ansible_ssh_private_key_file: ~/.ssh/id_rsa_ibmi
+          ansible_shell_type: sh
+          ansible_shell_executable: /QOpenSys/pkgs/bin/bash
+          ansible_python_interpreter: /QOpenSys/pkgs/bin/python3.9
+
+    # Example: Separate groups for different purposes
+    # ------------------------------------------------
+    
+    # Database servers (subset of ibmi_servers)
+    ibmi_database_servers:
+      hosts:
+        ibmi-example-01:
+      vars:
+        # Group-specific variables
+        database_role: primary
+        database_backup_schedule: "0 2 * * *"
+    
+    # Application servers (subset of ibmi_servers)
+    ibmi_application_servers:
+      hosts:
+        ibmi-minimal-01:
+      vars:
+        # Group-specific variables
+        application_role: web
+        application_port: 8080
+    
+    # Example: Geographic grouping
+    # ----------------------------
+    ibmi_us_east:
+      hosts:
+        ibmi-example-01:
+      vars:
+        region: us-east-1
+        timezone: America/New_York
+    
+    ibmi_eu_west:
+      hosts:
+        ibmi-minimal-01:
+      vars:
+        region: eu-west-1
+        timezone: Europe/London
+
+# Global Variables (Applied to all hosts)
+# ----------------------------------------
+# These can be overridden by group_vars or host_vars
+  vars:
+    # Common settings
+    ansible_ssh_pipelining: true
+    
+    # Timeouts
+    ansible_command_timeout: 300
+    
+    # Logging
+    log_level: INFO
+
+# Notes:
+# ------
+# 1. SSH Key Setup:
+#    - Generate SSH key: ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa_ibmi
+#    - Copy to IBM i: ssh-copy-id -i ~/.ssh/id_rsa_ibmi.pub user@ibmi-host
+#
+# 2. IBM i Prerequisites:
+#    - OpenSSH server must be running
+#    - Python3 must be installed via yum
+#    - Bash must be installed via yum
+#    - User must have appropriate authorities
+#
+# 3. Testing Connection:
+#    ansible -i inventory/example-hosts.yml ibmi_servers -m ping
+#
+# 4. Running Playbook:
+#    ansible-playbook -i inventory/example-hosts.yml site.yml
+#
+# 5. Limiting to Specific Hosts:
+#    ansible-playbook -i inventory/example-hosts.yml site.yml --limit ibmi-example-01
+#
+# 6. Using Tags:
+#    ansible-playbook -i inventory/example-hosts.yml site.yml --tags "prerequisites,packages"
+
+# Made with Bob

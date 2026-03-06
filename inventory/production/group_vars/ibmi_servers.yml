@@ -1,0 +1,71 @@
+---
+# Production IBM i Servers Group Variables
+#
+# These variables apply to all hosts in the ibmi_servers group in production.
+# They can be overridden at the host level in hosts.yml if needed.
+
+# Connection Settings
+# -------------------
+# These are typically set at the host level, but can be defined here for consistency
+# ansible_user: ansible_user
+# ansible_ssh_private_key_file: ~/.ssh/id_rsa_ibmi_prod
+
+# IBM i Connection Parameters
+ansible_shell_type: sh
+ansible_shell_executable: /QOpenSys/pkgs/bin/bash
+ansible_python_interpreter: /QOpenSys/pkgs/bin/python3
+
+# SSH Connection Settings
+ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+ansible_connection: ssh
+ansible_port: 22
+
+# Performance Settings
+ansible_ssh_pipelining: true
+ansible_ssh_transfer_method: scp
+
+# Environment
+ibmi_environment: production
+
+# Repository Configuration (Production)
+# --------------------------------------
+repository_url: "https://github.com/IBM/ibmi-company_system"
+repository_branch: "main"
+repository_dest: "/home/{{ ansible_user }}/ibmi-company_system"
+
+# Database Configuration (Production)
+# ------------------------------------
+database_name: "PRODDB"
+database_library: "PRODLIB"
+database_backup_enabled: true
+database_backup_retention_days: 30
+
+# Build Configuration (Production)
+# ---------------------------------
+build_environment: "production"
+build_optimization_level: "*FULL"
+build_debug_enabled: false
+
+# Package Management (Production)
+# --------------------------------
+yum_repos_enabled: true
+package_update_cache: true
+package_install_timeout: 600
+
+# Security Settings (Production)
+# -------------------------------
+security_audit_enabled: true
+security_log_level: "INFO"
+
+# Notification Settings (Production)
+# -----------------------------------
+# notification_email: "ops-team@example.com"
+# notification_slack_webhook: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+
+# Custom Variables
+# ----------------
+# Add any production-specific variables here
+# custom_var_1: "value1"
+# custom_var_2: "value2"
+
+# Made with Bob

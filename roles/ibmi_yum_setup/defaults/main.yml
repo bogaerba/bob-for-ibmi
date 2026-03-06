@@ -1,0 +1,20 @@
+---
+# Default variables for ibmi_yum_setup role
+
+# YUM binary location
+yum_binary: "/QOpenSys/pkgs/bin/yum"
+
+# Bootstrap script URL
+bootstrap_url: "https://public.dhe.ibm.com/software/ibmi/products/pase/rpms/bootstrap.sh"
+
+# Bootstrap timeout (seconds)
+bootstrap_timeout: 1800
+
+# Whether to optimize yum configuration
+yum_optimize: true
+
+# Retry settings for yum operations
+yum_retry_count: 3
+yum_retry_delay: 10
+
+# Made with Bob

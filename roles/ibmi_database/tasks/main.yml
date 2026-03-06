@@ -1,0 +1,132 @@
+---
+# Role: ibmi_database
+# Purpose: Execute SQL commands to create database samples using ibmi_sql_execute module
+
+- name: Verify database connectivity
+  ibm.power_ibmi.ibmi_sql_execute:
+    sql: "SELECT CURRENT SERVER FROM SYSIBM.SYSDUMMY1"
+  register: db_connectivity
+  changed_when: false
+  failed_when: db_connectivity.rc != 0
+  tags: [database, sql, verify]
+
+- name: Display database connectivity status
+  ansible.builtin.debug:
+    msg: "Database connectivity: {{ 'OK' if db_connectivity.rc == 0 else 'Failed' }}"
+  tags: [database, sql, verify]
+
+- name: Check if schema already exists
+  ibm.power_ibmi.ibmi_sql_execute:
+    sql: "SELECT SCHEMA_NAME FROM QSYS2.SYSSCHEMAS WHERE SCHEMA_NAME = '{{ sql_schema }}'"
+  register: schema_check
+  changed_when: false
+  failed_when: false
+  tags: [database, sql, check]
+
+- name: Display schema existence status
+  ansible.builtin.debug:
+    msg: "Schema {{ sql_schema }} {{ 'already exists' if schema_check.rc == 0 and sql_schema in schema_check.stdout else 'will be created' }}"
+  tags: [database, sql, check]
+
+- name: Create SQL sample schema
+  ibm.power_ibmi.ibmi_sql_execute:
+    sql: "{{ sql_command }}"
+  when: schema_check.rc != 0 or sql_schema not in schema_check.stdout
+  register: schema_creation
+  changed_when: schema_creation.rc == 0
+  failed_when: schema_creation.rc != 0 and 'already exists' not in (schema_creation.stderr | default(''))
+  tags: [database, sql, create]
+
+- name: Display schema creation result
+  ansible.builtin.debug:
+    msg: "Schema creation completed successfully"
+  when: schema_creation is defined and schema_creation.changed
+  tags: [database, sql, create]
+
+- name: Verify schema was created successfully
+  ibm.power_ibmi.ibmi_sql_execute:
+    sql: "SELECT SCHEMA_NAME FROM QSYS2.SYSSCHEMAS WHERE SCHEMA_NAME = '{{ sql_schema }}'"
+  register: schema_verify
+  changed_when: false
+  failed_when: schema_verify.rc != 0 or sql_schema not in schema_verify.stdout
+  tags: [database, sql, verify]
+
+- name: Display schema verification result
+  ansible.builtin.debug:
+    msg: "Schema {{ sql_schema }} verified successfully"
+  tags: [database, sql, verify]
+
+- name: Get list of tables in schema
+  ibm.power_ibmi.ibmi_sql_execute:
+    sql: "SELECT TABLE_NAME FROM QSYS2.SYSTABLES WHERE TABLE_SCHEMA = '{{ sql_schema }}' ORDER BY TABLE_NAME"
+  register: schema_tables
+  changed_when: false
+  failed_when: false
+  tags: [database, sql, info]
+
+- name: Display tables in schema
+  ansible.builtin.debug:
+    msg: "{{ schema_tables.stdout }}"
+  when: schema_tables.rc == 0 and schema_tables.stdout | length > 0
+  tags: [database, sql, info]
+
+- name: Count tables in schema
+  ibm.power_ibmi.ibmi_sql_execute:
+    sql: "SELECT COUNT(*) AS TABLE_COUNT FROM QSYS2.SYSTABLES WHERE TABLE_SCHEMA = '{{ sql_schema }}'"
+  register: table_count
+  changed_when: false
+  tags: [database, sql, info]
+
+- name: Display table count
+  ansible.builtin.debug:
+    msg: "Schema {{ sql_schema }} table count query result: {{ table_count.stdout }}"
+  when: table_count.rc == 0 and table_count.stdout | length > 0
+  tags: [database, sql, info]
+
+- name: Grant necessary authorities to user
+  ibm.power_ibmi.ibmi_sql_execute:
+    sql: "GRANT ALL ON SCHEMA {{ sql_schema }} TO {{ target_user }}"
+  register: grant_result
+  changed_when: grant_result.rc == 0
+  failed_when: false
+  when: grant_authorities
+  tags: [database, sql, permissions]
+
+- name: Display grant result
+  ansible.builtin.debug:
+    msg: "Authorities granted to {{ target_user }} on schema {{ sql_schema }}"
+  when: grant_authorities and grant_result.rc == 0
+  tags: [database, sql, permissions]
+
+- name: Create database setup summary
+  ansible.builtin.set_fact:
+    database_summary:
+      schema: "{{ sql_schema }}"
+      status: "{{ 'created' if (schema_creation is defined and schema_creation.changed) else 'already existed' }}"
+      verified: true
+      user: "{{ target_user }}"
+      authorities_granted: "{{ grant_result.rc == 0 if grant_authorities else false }}"
+      method: "ibmi_sql_execute (Ansible module)"
+  tags: [database]
+
+- name: Display database setup summary
+  ansible.builtin.debug:
+    msg:
+      - "Database setup completed successfully using ibmi_sql_execute module"
+      - "Method: ibm.power_ibmi.ibmi_sql_execute"
+      - "Schema: {{ database_summary.schema }}"
+      - "Status: {{ database_summary.status }}"
+      - "User: {{ database_summary.user }}"
+      - "Authorities: {{ 'Granted' if database_summary.authorities_granted else 'Already configured' }}"
+  tags: [database]
+
+- name: Record database setup in log file
+  ansible.builtin.lineinfile:
+    path: "{{ target_home }}/.ibmi-bob-database.log"
+    line: "{{ ansible_date_time.iso8601 }} - Schema {{ sql_schema }} setup completed using ibmi_sql_execute"
+    create: true
+    mode: '0644'
+  when: log_database_operations
+  tags: [database, logging]
+
+# Made with Bob

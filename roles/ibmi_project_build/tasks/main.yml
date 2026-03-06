@@ -1,0 +1,189 @@
+---
+# Role: ibmi_project_build
+# Purpose: Build the ibmi-company_system project
+
+- name: Verify makei is available
+  ansible.builtin.stat:
+    path: /QOpenSys/pkgs/bin/makei
+  register: makei_check
+  tags: [build, compile, verify]
+
+- name: Display makei availability
+  ansible.builtin.debug:
+    msg: "makei is {{ 'available' if makei_check.stat.exists else 'not available' }}"
+  tags: [build, compile, verify]
+
+- name: Assert makei is installed
+  ansible.builtin.assert:
+    that:
+      - makei_check.stat.exists
+      - makei_check.stat.executable
+    fail_msg: "makei is not installed or not executable. Please install it first."
+    success_msg: "makei is available and executable"
+  tags: [build, compile, verify]
+
+- name: Verify project directory exists
+  ansible.builtin.stat:
+    path: "{{ project_dir }}"
+  register: project_check
+  tags: [build, compile, verify]
+
+- name: Assert project directory exists
+  ansible.builtin.assert:
+    that:
+      - project_check.stat.exists
+      - project_check.stat.isdir
+    fail_msg: "Project directory {{ project_dir }} does not exist"
+    success_msg: "Project directory exists"
+  tags: [build, compile, verify]
+
+- name: Check for makefile in project directory
+  ansible.builtin.stat:
+    path: "{{ project_dir }}/makefile"
+  register: makefile_check
+  tags: [build, compile, verify]
+
+- name: Display makefile status
+  ansible.builtin.debug:
+    msg: "Makefile {{ 'found' if makefile_check.stat.exists else 'not found' }} in project directory"
+  tags: [build, compile, verify]
+
+- name: Check if build artifacts already exist
+  ansible.builtin.find:
+    paths: "{{ project_dir }}"
+    patterns: "*.pgm,*.srvpgm,*.bnddir"
+    recurse: true
+  register: existing_artifacts
+  tags: [build, compile, check]
+
+- name: Display existing artifacts status
+  ansible.builtin.debug:
+    msg: "Found {{ existing_artifacts.matched }} existing build artifacts"
+  tags: [build, compile, check]
+
+- name: Clean previous build if force rebuild
+  ansible.builtin.shell: |
+    cd {{ project_dir }} && {{ build_command | replace('build', 'clean') }}
+  args:
+    executable: /QOpenSys/pkgs/bin/bash
+  when: force_rebuild | default(false)
+  register: clean_result
+  changed_when: clean_result.rc == 0
+  failed_when: false
+  tags: [build, compile, clean]
+
+- name: Execute project build
+  ansible.builtin.shell: |
+    export CURLIB=CMPSYS;cd {{ project_dir }} && {{ build_command }}
+  args:
+    executable: /QOpenSys/pkgs/bin/bash
+  register: build_result
+  changed_when: build_result.rc == 0
+  failed_when: build_result.rc != 0
+  async: "{{ build_timeout }}"
+  poll: 10
+  tags: [build, compile]
+  ignore_errors: true
+
+- name: Display build output
+  ansible.builtin.debug:
+    msg: "{{ build_result.stdout_lines }}"
+  when: build_result.stdout_lines is defined
+  tags: [build, compile]
+
+- name: Display build errors if any
+  ansible.builtin.debug:
+    msg: "Build errors: {{ build_result.stderr_lines }}"
+  when: 
+    - build_result.stderr_lines is defined
+    - build_result.stderr_lines | length > 0
+  tags: [build, compile]
+
+- name: Save build output to log file
+  ansible.builtin.copy:
+    content: |
+      Build executed: {{ ansible_date_time.iso8601 }}
+      Build command: {{ build_command }}
+      Return code: {{ build_result.rc }}
+      
+      === STDOUT ===
+      {{ build_result.stdout }}
+      
+      === STDERR ===
+      {{ build_result.stderr }}
+    dest: "{{ build_log }}"
+    mode: '0644'
+  tags: [build, compile, logging]
+
+- name: Verify build success
+  ansible.builtin.debug:
+    msg: "Build completed with return code {{ build_result.rc }}"
+  tags: [build, compile, verify]
+
+- name: Find build artifacts after build
+  ansible.builtin.find:
+    paths: "{{ project_dir }}"
+    patterns: "*.pgm,*.srvpgm,*.bnddir"
+    recurse: true
+  register: build_artifacts
+  tags: [build, compile, verify]
+
+- name: Display build artifacts
+  ansible.builtin.debug:
+    msg: "Build created {{ build_artifacts.matched }} artifacts"
+  tags: [build, compile, verify]
+
+- name: List build artifacts
+  ansible.builtin.debug:
+    msg: "{{ item.path }}"
+  loop: "{{ build_artifacts.files }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+  when: build_artifacts.matched > 0
+  tags: [build, compile, info]
+
+- name: Get build directory size
+  ansible.builtin.shell: |
+    du -sh {{ project_dir }}
+  args:
+    executable: /QOpenSys/pkgs/bin/bash
+  register: dir_size
+  changed_when: false
+  tags: [build, compile, info]
+
+- name: Display build directory size
+  ansible.builtin.debug:
+    msg: "Project directory size: {{ dir_size.stdout }}"
+  tags: [build, compile, info]
+
+- name: Create build summary
+  ansible.builtin.set_fact:
+    build_summary:
+      project_dir: "{{ project_dir }}"
+      build_command: "{{ build_command }}"
+      build_status: "{{ 'success' if build_result.rc == 0 else 'failed' }}"
+      artifacts_created: "{{ build_artifacts.matched }}"
+      build_log: "{{ build_log }}"
+      build_time: "{{ ansible_date_time.iso8601 }}"
+  tags: [build]
+
+- name: Display build summary
+  ansible.builtin.debug:
+    msg:
+      - "Project build completed successfully"
+      - "Project directory: {{ build_summary.project_dir }}"
+      - "Build command: {{ build_summary.build_command }}"
+      - "Build status: {{ build_summary.build_status }}"
+      - "Artifacts created: {{ build_summary.artifacts_created }}"
+      - "Build log: {{ build_summary.build_log }}"
+  tags: [build]
+
+- name: Record build completion
+  ansible.builtin.lineinfile:
+    path: "{{ target_home }}/.ibmi-bob-build.log"
+    line: "{{ ansible_date_time.iso8601 }} - Build completed successfully with {{ build_artifacts.matched }} artifacts"
+    create: true
+    mode: '0644'
+  tags: [build, logging]
+
+# Made with Bob

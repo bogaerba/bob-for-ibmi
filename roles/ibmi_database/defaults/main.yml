@@ -1,0 +1,19 @@
+---
+# Default variables for ibmi_database role
+
+# SQL schema name
+sql_schema: "CMPSYS"
+
+# SQL command to create sample schema
+sql_command: "CALL QSYS.CREATE_SQL_SAMPLE('{{ sql_schema }}')"
+
+# Database user (defaults to target user)
+db_user: "{{ target_user }}"
+
+# Whether to grant authorities to user
+grant_authorities: true
+
+# Whether to log database operations
+log_database_operations: true
+
+# Made with Bob

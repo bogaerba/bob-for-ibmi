@@ -1,0 +1,34 @@
+# Managed by Ansible - DO NOT EDIT MANUALLY
+# Last updated: {{ ansible_date_time.iso8601 }}
+# 
+# This file is managed by Ansible. Any manual changes will be overwritten.
+# To add custom configurations, use the bash_profile_custom_content variable
+# or add them to a separate file like ~/.bashrc_custom
+
+## PS1: Shell prompt format
+# Format: [user@host directory]$
+# Color: Blue text for better visibility
+PS1="{{ bash_ps1 }}"
+export PS1
+
+## PATH: All PASE binaries are in /QOpenSys/pkgs/bin
+# This ensures that open-source tools installed via YUM are available
+PATH={{ bash_path }}
+export PATH
+
+## LANG: some tools (for example: tmux) need UTF-8 charset
+# Setting UTF-8 ensures proper character encoding for modern tools
+LANG={{ bash_lang }}
+export LANG
+
+## CURLIB: Current library for IBM i makei builds
+# This environment variable is used by makei to determine the target library
+# for compiled objects. It should match the sql_schema for consistency.
+CURLIB={{ bash_curlib }}
+export CURLIB
+
+# User customizations below this line
+# Add your custom environment variables and aliases here
+{% if bash_profile_custom_content is defined %}
+{{ bash_profile_custom_content }}
+{% endif %}

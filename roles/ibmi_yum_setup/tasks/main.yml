@@ -1,0 +1,123 @@
+---
+# Role: ibmi_yum_setup
+# Purpose: Configure and verify yum package manager
+
+- name: Check if yum is already installed
+  ansible.builtin.stat:
+    path: "{{ yum_binary }}"
+  register: yum_check
+  tags: [yum, setup]
+
+- name: Display yum installation status
+  ansible.builtin.debug:
+    msg: "YUM is {{ 'already installed' if yum_check.stat.exists else 'not installed' }}"
+  tags: [yum, setup]
+
+- name: Download yum bootstrap script
+  ansible.builtin.get_url:
+    url: "{{ bootstrap_url }}"
+    dest: "{{ target_home }}/bootstrap.sh"
+    mode: '0755'
+  when: not yum_check.stat.exists
+  register: bootstrap_download
+  retries: 3
+  delay: 5
+  until: bootstrap_download is succeeded
+  tags: [yum, bootstrap]
+
+- name: Install yum via bootstrap script
+  ansible.builtin.shell: |
+    {{ target_home }}/bootstrap.sh
+  args:
+    executable: /QOpenSys/pkgs/bin/bash
+  when: not yum_check.stat.exists
+  register: yum_install
+  async: 1800  # 30 minutes timeout
+  poll: 30
+  tags: [yum, bootstrap]
+
+- name: Display yum installation output
+  ansible.builtin.debug:
+    var: yum_install.stdout_lines
+  when: 
+    - not yum_check.stat.exists
+    - yum_install is defined
+  tags: [yum, bootstrap]
+
+- name: Remove bootstrap script
+  ansible.builtin.file:
+    path: "{{ target_home }}/bootstrap.sh"
+    state: absent
+  when: bootstrap_download is changed
+  tags: [yum, cleanup]
+
+- name: Verify yum is now installed
+  ansible.builtin.stat:
+    path: "{{ yum_binary }}"
+  register: yum_verify
+  tags: [yum, verify]
+
+- name: Assert yum is installed
+  ansible.builtin.assert:
+    that:
+      - yum_verify.stat.exists
+      - yum_verify.stat.executable
+    fail_msg: "YUM installation failed. Please check the logs and try again."
+    success_msg: "YUM is installed and executable"
+  tags: [yum, verify]
+
+- name: Update yum repository metadata
+  ansible.builtin.command: "{{ yum_binary }} makecache"
+  register: yum_makecache
+  changed_when: "'Metadata cache created' in yum_makecache.stdout"
+  retries: 3
+  delay: 10
+  until: yum_makecache is succeeded
+  tags: [yum, update]
+
+- name: Check yum version
+  ansible.builtin.command: "{{ yum_binary }} --version"
+  register: yum_version
+  changed_when: false
+  tags: [yum, verify]
+
+- name: Display yum version
+  ansible.builtin.debug:
+    msg: "YUM version: {{ yum_version.stdout_lines[0] }}"
+  tags: [yum, verify]
+
+- name: Test yum functionality
+  ansible.builtin.command: "{{ yum_binary }} list installed"
+  register: yum_test
+  changed_when: false
+  failed_when: yum_test.rc != 0
+  tags: [yum, verify]
+
+- name: Display installed packages count
+  ansible.builtin.debug:
+    msg: "YUM is functional. {{ yum_test.stdout_lines | length }} packages currently installed."
+  tags: [yum, verify]
+
+- name: Configure yum for optimal performance
+  ansible.builtin.lineinfile:
+    path: /QOpenSys/etc/yum/yum.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    create: true
+    mode: '0644'
+  loop:
+    - { regexp: '^keepcache=', line: 'keepcache=1' }
+    - { regexp: '^timeout=', line: 'timeout=300' }
+  when: yum_optimize | default(true)
+  tags: [yum, config]
+
+- name: YUM setup complete
+  ansible.builtin.debug:
+    msg:
+      - "YUM package manager setup completed successfully"
+      - "YUM binary: {{ yum_binary }}"
+      - "Repository metadata: Updated"
+      - "Status: Functional"
+  tags: [yum]
+
+# Made with Bob

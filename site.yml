@@ -1,0 +1,179 @@
+---
+# ============================================================================
+# THREE-PHASE BOOTSTRAP APPROACH
+# ============================================================================
+# This playbook uses a three-phase approach to handle Python interpreter setup:
+#
+# Phase 0 (Pre-Bootstrap): Uses raw SSH commands (no Python required) to:
+#   - Check if Python 3.9 is already installed
+#   - Install Python 3.9 using yum if missing
+#   - Verify Python 3.9 installation
+#
+# Phase 1 (Bootstrap): Uses Python 3.9 (/QOpenSys/pkgs/bin/python3.9) to:
+#   - Install prerequisites
+#   - Set up YUM package manager
+#   - Install remaining required packages
+#
+# Phase 2 (Configuration): Uses Python 3.9 (/QOpenSys/pkgs/bin/python3.9) to:
+#   - Configure bash profile
+#   - Clone repository
+#   - Set up database
+#   - Build project
+#
+# This approach prevents "SyntaxError: future feature annotations is not defined"
+# errors that occur when the system Python is too old (3.6 or earlier).
+# ============================================================================
+
+# ============================================================================
+# PLAY 0: Pre-Bootstrap - Install Python 3.9 using raw commands
+# ============================================================================
+- name: Pre-Bootstrap - Install Python 3.9
+  hosts: ibmi_servers
+  gather_facts: false
+  become: false  # Use target user's profile
+  environment:
+    PATH: "/QOpenSys/pkgs/bin:{{ ansible_env.PATH | default('') }}"
+  
+  tasks:
+    - name: Display pre-bootstrap phase information
+      ansible.builtin.raw: echo "=== PRE-BOOTSTRAP PHASE - Installing Python 3.9 ==="
+      changed_when: false
+      tags: always
+
+    - name: Check if Python 3.9 is already installed
+      ansible.builtin.raw: test -f /QOpenSys/pkgs/bin/python3.9 && echo "exists" || echo "missing"
+      register: python39_check
+      changed_when: false
+      failed_when: false
+      tags: always
+
+    - name: Display Python 3.9 check result
+      ansible.builtin.raw: echo "Python 3.9 status{{ ':' }} {{ python39_check.stdout }}"
+      changed_when: false
+      tags: always
+
+    - name: Install Python 3.9 using yum (raw command)
+      ansible.builtin.raw: /QOpenSys/pkgs/bin/yum install -y python39
+      when: "'missing' in python39_check.stdout"
+      register: python39_install
+      tags: always
+
+    - name: Verify Python 3.9 installation
+      ansible.builtin.raw: /QOpenSys/pkgs/bin/python3.9 --version
+      register: python39_version
+      changed_when: false
+      tags: always
+
+    - name: Display Python 3.9 version
+      ansible.builtin.raw: echo "Python 3.9 installed successfully{{ ':' }} {{ python39_version.stdout }}"
+      changed_when: false
+      tags: always
+
+# ============================================================================
+# PLAY 1: Bootstrap - Verify system using Python 3.9
+# ============================================================================
+- name: Bootstrap IBM i LPAR
+  hosts: ibmi_servers
+  gather_facts: true
+  become: false  # Use target user's profile
+  vars:
+    # Use Python 3.9 for bootstrap phase
+    ansible_python_interpreter: /QOpenSys/pkgs/bin/python3.9
+  environment:
+    PATH: "/QOpenSys/pkgs/bin:{{ ansible_env.PATH | default('') }}"
+  
+  pre_tasks:
+    - name: Display bootstrap phase information
+      ansible.builtin.debug:
+        msg:
+          - "=== BOOTSTRAP PHASE ==="
+          - "Target Host: {{ inventory_hostname }}"
+          - "IBM i Version: {{ ibmi_version | default('Unknown') }}"
+          - "User: {{ target_user }}"
+          - "Python Interpreter: {{ ansible_python_interpreter }}"
+      tags: always
+
+    - name: Verify connectivity
+      ansible.builtin.ping:
+      tags: always
+
+  roles:
+    - role: ibmi_prerequisites
+      tags: [prerequisites, setup]
+      
+    - role: ibmi_yum_setup
+      tags: [yum, packages, setup]
+      
+    - role: ibmi_packages
+      tags: [packages, setup]
+
+  post_tasks:
+    - name: Verify Python 3.9 is functional
+      ansible.builtin.command:
+        cmd: /QOpenSys/pkgs/bin/python3.9 --version
+      register: python39_verify
+      changed_when: false
+      tags: always
+
+    - name: Display Python 3.9 verification
+      ansible.builtin.debug:
+        msg:
+          - "Python 3.9 verified successfully!"
+          - "Version: {{ python39_verify.stdout }}"
+      tags: always
+
+# ============================================================================
+# PLAY 2: Configure - Use Python 3.9 for remaining tasks
+# ============================================================================
+- name: Configure IBM i LPAR for IBM Bob
+  hosts: ibmi_servers
+  gather_facts: false  # Already gathered in Play 1
+  become: false  # Use target user's profile
+  vars:
+    # Use Python 3.9 for configuration phase
+    ansible_python_interpreter: /QOpenSys/pkgs/bin/python3.9
+  environment:
+    PATH: "/QOpenSys/pkgs/bin:{{ ansible_env.PATH | default('') }}"
+  
+  pre_tasks:
+    - name: Display configuration phase information
+      ansible.builtin.debug:
+        msg:
+          - "=== CONFIGURATION PHASE ==="
+          - "Target Host: {{ inventory_hostname }}"
+          - "User: {{ target_user }}"
+          - "Python Interpreter: {{ ansible_python_interpreter }}"
+          - "Timestamp: {{ ansible_date_time.iso8601 }}"
+      tags: always
+
+  roles:
+    - role: ibmi_bash_profile
+      tags: [profile, config]
+      
+    - role: ibmi_repository
+      tags: [repository, git]
+      
+    - role: ibmi_database
+      tags: [database, sql]
+      
+    - role: ibmi_project_build
+      tags: [build, compile]
+
+  post_tasks:
+    - name: Display completion summary
+      ansible.builtin.debug:
+        msg:
+          - "=== SETUP COMPLETED SUCCESSFULLY ==="
+          - "Repository location: {{ repository_dest }}"
+          - "Database schema: {{ sql_schema }}"
+          - "Build status: Complete"
+      tags: always
+
+    - name: Create completion marker
+      ansible.builtin.file:
+        path: "{{ target_home }}/.ibmi-bob-setup-complete"
+        state: touch
+        mode: '0644'
+      tags: always
+
+# Made with Bob

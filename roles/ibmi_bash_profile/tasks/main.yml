@@ -1,0 +1,136 @@
+---
+# Role: ibmi_bash_profile
+# Purpose: Configure user's bash profile with required environment variables
+
+- name: Check if .bash_profile already exists
+  ansible.builtin.stat:
+    path: "{{ bash_profile_path }}"
+  register: bash_profile_check
+  tags: [profile, config]
+
+- name: Backup existing .bash_profile if present
+  ansible.builtin.copy:
+    src: "{{ bash_profile_path }}"
+    dest: "{{ bash_profile_path }}{{ backup_suffix }}"
+    remote_src: true
+    mode: preserve
+  when: bash_profile_check.stat.exists
+  tags: [profile, backup]
+
+- name: Display backup status
+  ansible.builtin.debug:
+    msg: "Existing .bash_profile backed up to {{ bash_profile_path }}{{ backup_suffix }}"
+  when: bash_profile_check.stat.exists
+  tags: [profile, backup]
+
+- name: Create .bash_profile from template
+  ansible.builtin.template:
+    src: bash_profile.j2
+    dest: "{{ bash_profile_path }}"
+    owner: "{{ target_user }}"
+    mode: '0644'
+    backup: true
+  register: profile_created
+  tags: [profile, config]
+
+- name: Display profile creation status
+  ansible.builtin.debug:
+    msg: ".bash_profile {{ 'created' if profile_created.changed else 'already configured' }}"
+  tags: [profile, config]
+
+- name: Verify .bash_profile syntax
+  ansible.builtin.shell: |
+    /QOpenSys/pkgs/bin/bash -n {{ bash_profile_path }}
+  register: syntax_check
+  changed_when: false
+  failed_when: syntax_check.rc != 0
+  tags: [profile, verify]
+
+- name: Display syntax check result
+  ansible.builtin.debug:
+    msg: ".bash_profile syntax is valid"
+  when: syntax_check.rc == 0
+  tags: [profile, verify]
+
+- name: Source .bash_profile to validate
+  ansible.builtin.shell: |
+    source {{ bash_profile_path }} && echo "Profile loaded successfully"
+  args:
+    executable: /QOpenSys/pkgs/bin/bash
+  register: source_test
+  changed_when: false
+  tags: [profile, verify]
+
+- name: Display source test result
+  ansible.builtin.debug:
+    msg: "{{ source_test.stdout }}"
+  tags: [profile, verify]
+
+- name: Verify PATH includes /QOpenSys/pkgs/bin
+  ansible.builtin.shell: |
+    source {{ bash_profile_path }} && echo $PATH | grep -q "/QOpenSys/pkgs/bin"
+  args:
+    executable: /QOpenSys/pkgs/bin/bash
+  register: path_check
+  changed_when: false
+  failed_when: path_check.rc != 0
+  tags: [profile, verify]
+
+- name: Verify LANG is set correctly
+  ansible.builtin.shell: |
+    source {{ bash_profile_path }} && echo $LANG
+  args:
+    executable: /QOpenSys/pkgs/bin/bash
+  register: lang_check
+  changed_when: false
+  tags: [profile, verify]
+
+- name: Display LANG setting
+  ansible.builtin.debug:
+    msg: "LANG is set to: {{ lang_check.stdout }}"
+  tags: [profile, verify]
+
+- name: Verify PS1 is set
+  ansible.builtin.shell: |
+    source {{ bash_profile_path }} && echo $PS1
+  args:
+    executable: /QOpenSys/pkgs/bin/bash
+  register: ps1_check
+  changed_when: false
+  tags: [profile, verify]
+
+- name: Display PS1 setting
+  ansible.builtin.debug:
+    msg: "PS1 is configured"
+  tags: [profile, verify]
+
+- name: Create profile configuration summary
+  ansible.builtin.set_fact:
+    profile_summary:
+      path: "{{ bash_profile_path }}"
+      backup_created: "{{ bash_profile_check.stat.exists }}"
+      syntax_valid: true
+      path_configured: true
+      lang_configured: "{{ lang_check.stdout }}"
+      configuration_complete: true
+  tags: [profile]
+
+- name: Display bash profile configuration summary
+  ansible.builtin.debug:
+    msg:
+      - "Bash profile configuration completed successfully"
+      - "Profile path: {{ profile_summary.path }}"
+      - "Backup created: {{ profile_summary.backup_created }}"
+      - "PATH includes: /QOpenSys/pkgs/bin"
+      - "LANG set to: {{ profile_summary.lang_configured }}"
+      - "PS1: Configured with custom prompt"
+  tags: [profile]
+
+- name: Add note about profile activation
+  ansible.builtin.debug:
+    msg:
+      - "IMPORTANT: The new bash profile will be active on next login"
+      - "To activate immediately, run: source {{ bash_profile_path }}"
+  tags: [profile]
+
+# Made with Bob
