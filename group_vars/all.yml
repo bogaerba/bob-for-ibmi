@@ -46,6 +46,7 @@ required_packages:
   - ibmichroot
   - nano
   - tobi
+  - python39-itoolkit
 
 # Required directories
 required_directories:

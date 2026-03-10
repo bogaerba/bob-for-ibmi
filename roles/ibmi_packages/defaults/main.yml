@@ -6,7 +6,9 @@ yum_binary: "/QOpenSys/pkgs/bin/yum"
 
 # Required packages list
 # Note: python39 is installed in Phase 0 (Pre-Bootstrap) using raw commands
+# Note: python39-pip must be installed before python39-itoolkit
 required_packages:
+  - python39-itoolkit
   - git
   - tn5250
   - service-commander
@@ -15,8 +17,8 @@ required_packages:
   - ibmichroot
   - nano
   - tobi
-  - python39-itoolkit.ppc64
 
+  
 # Package installation retry settings
 package_retry_count: 2
 package_retry_delay: 5

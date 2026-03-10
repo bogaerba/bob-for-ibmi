@@ -134,3 +134,68 @@
   tags: [profile]
 
 # Made with Bob
+
+- name: Check if .bashrc already exists
+  ansible.builtin.stat:
+    path: "{{ target_home }}/.bashrc"
+  register: bashrc_check
+  tags: [profile, config]
+
+- name: Backup existing .bashrc if it's a regular file
+  ansible.builtin.copy:
+    src: "{{ target_home }}/.bashrc"
+    dest: "{{ target_home }}/.bashrc{{ backup_suffix }}"
+    remote_src: true
+    mode: preserve
+  when: 
+    - bashrc_check.stat.exists
+    - bashrc_check.stat.isreg
+  tags: [profile, backup]
+
+- name: Remove existing .bashrc if it's not a symlink
+  ansible.builtin.file:
+    path: "{{ target_home }}/.bashrc"
+    state: absent
+  when:
+    - bashrc_check.stat.exists
+    - not bashrc_check.stat.islnk
+  tags: [profile, config]
+
+- name: Create symlink from .bashrc to .bash_profile
+  ansible.builtin.file:
+    src: "{{ bash_profile_path }}"
+    dest: "{{ target_home }}/.bashrc"
+    state: link
+    owner: "{{ target_user }}"
+  tags: [profile, config]
+
+- name: Verify .bashrc symlink
+  ansible.builtin.stat:
+    path: "{{ target_home }}/.bashrc"
+  register: bashrc_symlink_check
+  tags: [profile, verify]
+
+- name: Display symlink status
+  ansible.builtin.debug:
+    msg: ".bashrc is now a symlink to .bash_profile"
+  when: bashrc_symlink_check.stat.islnk
+  tags: [profile, verify]
+
+- name: Get current default shell
+  ansible.builtin.shell: |
+    grep "^{{ target_user }}:" /etc/passwd | cut -d: -f7
+  register: current_shell
+  changed_when: false
+  tags: [profile, shell]
+
+- name: Change default shell to bash
+  ansible.builtin.command:
+    cmd: /QOpenSys/pkgs/bin/chsh -s /QOpenSys/pkgs/bin/bash
+  when: current_shell.stdout != '/QOpenSys/pkgs/bin/bash'
+  register: shell_changed
+  tags: [profile, shell]
+
+- name: Display shell change status
+  ansible.builtin.debug:
+    msg: "Default shell {{ 'changed to' if shell_changed.changed else 'already set to' }} /QOpenSys/pkgs/bin/bash"
+  tags: [profile, shell]

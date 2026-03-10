@@ -73,14 +73,14 @@
   tags: [build, compile, clean]
 
 - name: Execute project build
-  ansible.builtin.shell: |
+  ansible.builtin.raw: |
     export CURLIB=CMPSYS;cd {{ project_dir }} && {{ build_command }}
   args:
     executable: /QOpenSys/pkgs/bin/bash
   register: build_result
   changed_when: build_result.rc == 0
   failed_when: build_result.rc != 0
-  async: "{{ build_timeout }}"
+#  async: "{{ build_timeout }}"
   poll: 10
   tags: [build, compile]
   ignore_errors: true

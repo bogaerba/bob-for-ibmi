@@ -16,8 +16,8 @@
   tags: [database, sql, verify]
 
 - name: Check if schema already exists
-  ibm.power_ibmi.ibmi_sql_execute:
-    sql: "SELECT SCHEMA_NAME FROM QSYS2.SYSSCHEMAS WHERE SCHEMA_NAME = '{{ sql_schema }}'"
+  ibm.power_ibmi.ibmi_cl_command:
+    cmd: "CHKOBJ OBJ({{ sql_schema }}) OBJTYPE(*LIB)"
   register: schema_check
   changed_when: false
   failed_when: false
