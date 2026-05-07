@@ -29,9 +29,9 @@ ibmi_environment: development
 
 # Repository Configuration (Development)
 # ---------------------------------------
-repository_url: "https://github.com/IBM/ibmi-company_system"
+repository_url: "https://github.com/bmarolleau/IBM-i-Application-Modernization-with-Bob"
 repository_branch: "main"
-repository_dest: "/home/{{ ansible_user }}/ibmi-company_system"
+repository_dest: "/home/{{ ansible_user }}/IBM-i-Application-Modernization-with-Bob"
 
 # Database Configuration (Development)
 # -------------------------------------

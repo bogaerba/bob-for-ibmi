@@ -253,7 +253,7 @@ repository_url: "https://github.com/IBM/ibmi-company_system"
 repository_dest: "{{ target_home }}/ibmi-company_system"
 
 # Database settings
-sql_schema: "CMPSYS"
+sql_schema: "SAMCO"
 ```
 
 ### Inventory Best Practices
@@ -469,13 +469,13 @@ repository_force: no  # whether to discard local changes
 **Tasks:**
 1. Verify Db2 for i is accessible
 2. Check if schema already exists
-3. Execute SQL command: `CALL QSYS.CREATE_SQL_SAMPLE('CMPSYS')`
+3. Execute SQL command: `CALL QSYS.CREATE_SQL_SAMPLE('SAMCO')`
 4. Verify schema creation
 5. Grant necessary authorities
 
 **Key Variables:**
 ```yaml
-sql_schema: "CMPSYS"
+sql_schema: "SAMCO"
 sql_command: "CALL QSYS.CREATE_SQL_SAMPLE('{{ sql_schema }}')"
 db_user: "{{ target_user }}"
 ```

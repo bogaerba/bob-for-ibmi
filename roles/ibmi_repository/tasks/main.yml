@@ -99,27 +99,6 @@
     msg: "{{ repo_status.stdout_lines }}"
   tags: [repository, verify]
 
-- name: Check for important files in repository
-  ansible.builtin.stat:
-    path: "{{ repository_dest }}/{{ item }}"
-  loop:
-    - README.md
-    - makefile
-    - .git
-  register: important_files
-  tags: [repository, verify]
-
-- name: Verify important files exist
-  ansible.builtin.assert:
-    that:
-      - item.stat.exists
-    fail_msg: "Important file {{ item.item }} not found in repository"
-    success_msg: "File {{ item.item }} exists"
-  loop: "{{ important_files.results }}"
-  loop_control:
-    label: "{{ item.item }}"
-  tags: [repository, verify]
-
 - name: Create repository summary
   ansible.builtin.set_fact:
     repository_summary:

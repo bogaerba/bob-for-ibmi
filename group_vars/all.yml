@@ -10,17 +10,17 @@ target_home: "/home/{{ target_user }}"
 required_ibmi_version: "7.5"
 
 # Repository configuration
-repository_url: "https://github.com/IBM/ibmi-company_system"
-repository_dest: "{{ target_home }}/ibmi-company_system"
+repository_url: "https://github.com/bmarolleau/IBM-i-Application-Modernization-with-Bob"
+repository_dest: "{{ target_home }}/IBM-i-Application-Modernization-with-Bob"
 repository_version: "main"
 repository_force: false
 
 # Database configuration
-sql_schema: "CMPSYS"
+sql_schema: "SAMCO"
 sql_command: "CALL QSYS.CREATE_SQL_SAMPLE('{{ sql_schema }}')"
 
 # Build configuration
-project_dir: "{{ repository_dest }}"
+project_dir: "{{ repository_dest }}/SAMCO"
 build_command: "/QOpenSys/pkgs/bin/makei build"
 build_log: "{{ project_dir }}/build.log"
 build_timeout: 600

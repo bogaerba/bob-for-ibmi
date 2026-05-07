@@ -2,7 +2,7 @@
 
 ## Description
 
-This role executes SQL commands to create database sample schemas on IBM i using the `ibm.power_ibmi.ibmi_sql_execute` Ansible module. It creates the CMPSYS (Company System) sample schema using the IBM-provided `CREATE_SQL_SAMPLE` stored procedure, verifies the schema creation, and grants necessary authorities to the target user.
+This role executes SQL commands to create database sample schemas on IBM i using the `ibm.power_ibmi.ibmi_sql_execute` Ansible module. It creates the SAMCO (Company System) sample schema using the IBM-provided `CREATE_SQL_SAMPLE` stored procedure, verifies the schema creation, and grants necessary authorities to the target user.
 
 ## Requirements
 
@@ -17,7 +17,7 @@ This role executes SQL commands to create database sample schemas on IBM i using
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `sql_schema` | `CMPSYS` | Name of the schema to create |
+| `sql_schema` | `SAMCO` | Name of the schema to create |
 | `sql_command` | `CALL QSYS.CREATE_SQL_SAMPLE('{{ sql_schema }}')` | SQL command to execute |
 | `db_user` | `{{ target_user }}` | Database user for authority grants |
 | `grant_authorities` | `true` | Whether to grant authorities to user |
@@ -42,9 +42,9 @@ This role executes SQL commands to create database sample schemas on IBM i using
 8. **Create Summary**: Generates database setup summary
 9. **Log Operations**: Records database operations to log file
 
-## SQL Sample Schema (CMPSYS)
+## SQL Sample Schema (SAMCO)
 
-The CMPSYS schema is IBM's sample company system database that includes:
+The SAMCO schema is IBM's sample company system database that includes:
 - Employee tables
 - Department tables
 - Project tables
@@ -130,7 +130,7 @@ After running this role, verify the database setup using the ibmi_sql_execute mo
 
 ```yaml
 # Using Ansible ad-hoc command
-ansible ibmi -m ibm.power_ibmi.ibmi_sql_execute -a "sql='SELECT SCHEMA_NAME FROM QSYS2.SYSSCHEMAS WHERE SCHEMA_NAME = \"CMPSYS\"'"
+ansible ibmi -m ibm.power_ibmi.ibmi_sql_execute -a "sql='SELECT SCHEMA_NAME FROM QSYS2.SYSSCHEMAS WHERE SCHEMA_NAME = \"SAMCO\"'"
 ```
 
 Or using system command line:
