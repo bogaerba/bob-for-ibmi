@@ -2,10 +2,10 @@
 # Default variables for ibmi_repository role
 
 # Repository URL
-repository_url: "https://github.com/IBM/ibmi-company_system"
+repository_url: "https://github.com/bmarolleau/IBM-i-Application-Modernization-with-Bob"
 
 # Repository destination path
-repository_dest: "{{ target_home }}/ibmi-company_system"
+repository_dest: "{{ target_home }}/IBM-i-Application-Modernization-with-Bob"
 
 # Repository version (branch, tag, or commit)
 repository_version: "main"

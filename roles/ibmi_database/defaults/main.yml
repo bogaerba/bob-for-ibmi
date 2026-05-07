@@ -2,7 +2,7 @@
 # Default variables for ibmi_database role
 
 # SQL schema name
-sql_schema: "CMPSYS"
+sql_schema: "SAMCO"
 
 # SQL command to create sample schema
 sql_command: "CALL QSYS.CREATE_SQL_SAMPLE('{{ sql_schema }}')"

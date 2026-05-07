@@ -2,7 +2,7 @@
 # Default variables for ibmi_project_build role
 
 # Project directory (where repository was cloned)
-project_dir: "{{ repository_dest }}"
+project_dir: "{{ repository_dest }}/SAMCO"
 
 # Build command to execute
 build_command: "/QOpenSys/pkgs/bin/makei build"
