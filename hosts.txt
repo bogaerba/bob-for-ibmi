@@ -1,0 +1,20 @@
+IBM i Reservation Details
+=========================
+
+Reservation 1:
+  Hostname:    itzpvs-t080s0pj
+  IP Address:  169.57.233.84
+  Username:    U3TJ7HY
+  Password:    n5zo6VR)fTjJ..Z
+
+Reservation 2:
+  Hostname:    itzpvs-b5svr0pj
+  IP Address:  169.57.218.252
+  Username:    US9JCAN
+  Password:    0LmmS5@f.D.G5+H
+
+Reservation 3:
+  Hostname:    itzpvs-2688a0pj
+  IP Address:  150.239.206.194
+  Username:    UV2CEH6
+  Password:    8.t2@4j(RuFWPBn

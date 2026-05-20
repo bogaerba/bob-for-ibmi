@@ -189,7 +189,7 @@
 
 - name: Populate tables with SAMCO database
   ibm.power_ibmi.ibmi_cl_command:
-    cmd: "RUNSQLSTM SRCSTMF('/home/cecuser/IBM-i-Application-Modernization-with-Bob/SAMCO/POPULATE_SAMCO_TABLES.sql') COMMIT(*NONE) NAMING(*SQL)"
+    cmd: "RUNSQLSTM SRCSTMF('{{ target_home }}/IBM-i-Application-Modernization-with-Bob/SAMCO/POPULATE_SAMCO_TABLES.sql') COMMIT(*NONE) NAMING(*SQL)"
   register: table_creation
   changed_when: false
   failed_when: table_creation.rc != 0 or sql_schema not in schema_verify.stdout
