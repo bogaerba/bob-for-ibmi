@@ -1,6 +1,6 @@
 ---
 # Role: ibmi_project_build
-# Purpose: Build the SAMCO project
+# Purpose: Build the SAMCOn project
 
 - name: Verify makei is available
   ansible.builtin.stat:
@@ -74,7 +74,7 @@
 
 - name: Execute project build
   ansible.builtin.raw: |
-    export lib1=SAMCO;cd {{ project_dir }} && {{ build_command }}
+    export lib1=SAMCOn;cd {{ project_dir }} && {{ build_command }}
   args:
     executable: /QOpenSys/pkgs/bin/bash
   register: build_result
@@ -187,7 +187,7 @@
   tags: [build, logging]
 
 
-- name: Populate tables with SAMCO database
+- name: Populate tables with SAMCOn database
   ibm.power_ibmi.ibmi_cl_command:
     cmd: "RUNSQLSTM SRCSTMF('{{ target_home }}/IBM-i-Application-Modernization-with-Bob/SAMCO/POPULATE_SAMCO_TABLES.sql') COMMIT(*NONE) NAMING(*SQL)"
   register: table_creation

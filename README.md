@@ -201,7 +201,7 @@ repository_url: "https://github.com/IBM/ibmi-company_system"
 repository_version: "main"
 
 # Database configuration
-sql_schema: "SAMCO"
+sql_schema: "SAMCOn"
 
 # Build configuration
 build_command: "/QOpenSys/pkgs/bin/makei build"
@@ -379,7 +379,7 @@ The playbook consists of 7 specialized roles that execute in sequence:
 
 ### 6. ibmi_database
 
-**Purpose**: Create database sample schema (SAMCO)
+**Purpose**: Create database sample schema (SAMCOn)
 
 **Tasks**:
 - Verify database connectivity

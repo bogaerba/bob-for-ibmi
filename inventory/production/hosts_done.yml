@@ -1,0 +1,276 @@
+all:
+  children:
+    ibmi_servers:
+      hosts:
+        # Example IBM i Production Server 1
+        161.156.136.101:
+          ansible_host: 161.156.136.101
+          ansible_user: U23SFPH
+          ansible_ssh_private_key_file: ~/.ssh/161.156.136.101.pem
+          
+          # IBM i specific connection settings
+          ansible_shell_type: sh
+          ansible_shell_executable: /QOpenSys/pkgs/bin/bash
+          
+          # Python interpreter - Two-Phase Bootstrap Approach
+          # Default to system Python for initial setup (allows Python 3.9 installation)
+          # The site.yml playbook overrides this in Phase 2 to use Python 3.9
+          # after it has been installed in Phase 1
+          ansible_python_interpreter: /QOpenSys/pkgs/bin/python3
+          
+          # Host-specific variables (optional)
+          ibmi_system_name: PRODIBM01
+          ibmi_environment: production
+
+        itzpvs-t080s0pj:
+          ansible_host: 169.57.233.84
+          ansible_user: U3TJ7HY
+          ansible_ssh_private_key_file: ~/.ssh/itzpvs-t080s0pj.pem          
+          
+          # IBM i specific connection settings
+          ansible_shell_type: sh
+          ansible_shell_executable: /QOpenSys/pkgs/bin/bash
+          
+          # Python interpreter - Two-Phase Bootstrap Approach
+          ansible_python_interpreter: /QOpenSys/pkgs/bin/python3
+          
+          # Host-specific variables
+          ibmi_system_name: itzpvs-t080s0pj
+          ibmi_environment: techzone
+          techzone_region: br-sao
+
+        itzpvs-2688a0pj:
+          ansible_host: 150.239.206.194
+          ansible_user: UV2CEH6
+          ansible_ssh_private_key_file: ~/.ssh/itzpvs-2688a0pj.pem          
+          
+          # IBM i specific connection settings
+          ansible_shell_type: sh
+          ansible_shell_executable: /QOpenSys/pkgs/bin/bash
+          
+          # Python interpreter - Two-Phase Bootstrap Approach
+          ansible_python_interpreter: /QOpenSys/pkgs/bin/python3
+          
+          # Host-specific variables
+          ibmi_system_name: itzpvs-2688a0pj
+          ibmi_environment: techzone
+          techzone_region: us-east
+
+        itzpvs-s8jvr0pj:
+          ansible_host: 169.57.218.171
+          ansible_user: U2FDJLX
+          ansible_ssh_private_key_file: ~/.ssh/itzpvs-s8jvr0pj.pem          
+          
+          # IBM i specific connection settings
+          ansible_shell_type: sh
+          ansible_shell_executable: /QOpenSys/pkgs/bin/bash
+          
+          # Python interpreter - Two-Phase Bootstrap Approach
+          ansible_python_interpreter: /QOpenSys/pkgs/bin/python3
+          
+          # Host-specific variables
+          ibmi_system_name: itzpvs-s8jvr0pj
+          ibmi_environment: techzone
+          techzone_region: br-sao
+
+        # Techzone Reservation 2 - Brazil São Paulo
+        itzpvs-b5svr0pj:
+          ansible_host: 169.57.218.252
+          ansible_user: US9JCAN
+          ansible_ssh_private_key_file: ~/.ssh/itzpvs-b5svr0pj.pem          
+
+          
+          # IBM i specific connection settings
+          ansible_shell_type: sh
+          ansible_shell_executable: /QOpenSys/pkgs/bin/bash
+          
+          # Python interpreter - Two-Phase Bootstrap Approach
+          ansible_python_interpreter: /QOpenSys/pkgs/bin/python3
+          
+          # Host-specific variables
+          ibmi_system_name: itzpvs-b5svr0pj
+          ibmi_environment: techzone
+          techzone_region: br-sao
+
+        # Techzone Reservation 3 - US East Washington DC
+        itzpvs-3dqsr0pj:
+          ansible_host: 169.57.212.29
+          ansible_user: UW983GE
+          ansible_ssh_private_key_file: ~/.ssh/itzpvs-3dqsr0pj.pem          
+
+          
+          # IBM i specific connection settings
+          ansible_shell_type: sh
+          ansible_shell_executable: /QOpenSys/pkgs/bin/bash
+          
+          # Python interpreter - Two-Phase Bootstrap Approach
+          ansible_python_interpreter: /QOpenSys/pkgs/bin/python3
+          
+          # Host-specific variables
+          ibmi_system_name: itzpvs-2688a0pj
+          ibmi_environment: techzone
+          techzone_region: us-east
+
+        itzpvs-eg50r0pj:
+          ansible_host: 169.57.233.195
+          ansible_user: UG0F956
+          ansible_ssh_private_key_file: ~/.ssh/itzpvs-eg50r0pj.pem          
+          
+          # IBM i specific connection settings
+          ansible_shell_type: sh
+          ansible_shell_executable: /QOpenSys/pkgs/bin/bash
+          
+          # Python interpreter - Two-Phase Bootstrap Approach
+          ansible_python_interpreter: /QOpenSys/pkgs/bin/python3
+          
+          # Host-specific variables
+          ibmi_system_name: itzpvs-eg50r0pj
+          ibmi_environment: techzone
+          techzone_region: br-sao
+
+        # Techzone Reservation 2 - Brazil São Paulo
+        itzpvs-vn01r0pj:
+          ansible_host: 169.57.233.131
+          ansible_user: UM2J6CB
+          ansible_ssh_private_key_file: ~/.ssh/itzpvs-vn01r0pj.pem          
+
+          
+          # IBM i specific connection settings
+          ansible_shell_type: sh
+          ansible_shell_executable: /QOpenSys/pkgs/bin/bash
+          
+          # Python interpreter - Two-Phase Bootstrap Approach
+          ansible_python_interpreter: /QOpenSys/pkgs/bin/python3
+          
+          # Host-specific variables
+          ibmi_system_name: itzpvs-vn01r0pj
+          ibmi_environment: techzone
+          techzone_region: br-sao
+
+        # Techzone Reservation 3 - US East Washington DC
+        itzpvs-5b7372pj:
+          ansible_host: 169.57.180.110
+          ansible_user: U8SQA7A
+          ansible_ssh_private_key_file: ~/.ssh/itzpvs-5b7372pj.pem          
+
+          
+          # IBM i specific connection settings
+          ansible_shell_type: sh
+          ansible_shell_executable: /QOpenSys/pkgs/bin/bash
+          
+          # Python interpreter - Two-Phase Bootstrap Approach
+          ansible_python_interpreter: /QOpenSys/pkgs/bin/python3
+          
+          # Host-specific variables
+          ibmi_system_name: itzpvs-2688a0pj
+          ibmi_environment: techzone
+          techzone_region: us-east
+
+        itzpvs-49i172pj:
+          ansible_host: 169.57.218.46
+          ansible_user: U6Z7TCG
+          ansible_ssh_private_key_file: ~/.ssh/itzpvs-49i172pj.pem
+
+          
+          # IBM i specific connection settings
+          ansible_shell_type: sh
+          ansible_shell_executable: /QOpenSys/pkgs/bin/bash
+          
+          # Python interpreter - Two-Phase Bootstrap Approach
+          ansible_python_interpreter: /QOpenSys/pkgs/bin/python3
+          
+          # Host-specific variables
+          ibmi_system_name: itzpvs-2688a0pj
+          ibmi_environment: techzone
+          techzone_region: us-east
+
+        itzpvs-mk4472pj:
+          ansible_host: 169.57.218.158
+          ansible_user: U6NPXID
+          ansible_ssh_private_key_file: ~/.ssh/itzpvs-mk4472pj.pem
+
+          
+          # IBM i specific connection settings
+          ansible_shell_type: sh
+          ansible_shell_executable: /QOpenSys/pkgs/bin/bash
+          
+          # Python interpreter - Two-Phase Bootstrap Approach
+          ansible_python_interpreter: /QOpenSys/pkgs/bin/python3
+          
+          # Host-specific variables
+          ibmi_system_name: itzpvs-2688a0pj
+          ibmi_environment: techzone
+          techzone_region: us-east
+
+        itzpvs-ac9172pj:
+          ansible_host: 169.57.180.132
+          ansible_user: UKW6EXO
+          ansible_ssh_private_key_file: ~/.ssh/itzpvs-ac9172pj.pem
+
+          
+          # IBM i specific connection settings
+          ansible_shell_type: sh
+          ansible_shell_executable: /QOpenSys/pkgs/bin/bash
+          
+          # Python interpreter - Two-Phase Bootstrap Approach
+          ansible_python_interpreter: /QOpenSys/pkgs/bin/python3
+          
+          # Host-specific variables
+          ibmi_system_name: itzpvs-2688a0pj
+          ibmi_environment: techzone
+          techzone_region: us-east
+
+        itzpvs-upv072pj:
+          ansible_host: 169.57.212.20
+          ansible_user: U78FICM
+          ansible_ssh_private_key_file: ~/.ssh/itzpvs-upv072pj.pem
+
+          
+          # IBM i specific connection settings
+          ansible_shell_type: sh
+          ansible_shell_executable: /QOpenSys/pkgs/bin/bash
+          
+          # Python interpreter - Two-Phase Bootstrap Approach
+          ansible_python_interpreter: /QOpenSys/pkgs/bin/python3
+          
+          # Host-specific variables
+          ibmi_system_name: itzpvs-2688a0pj
+          ibmi_environment: techzone
+          techzone_region: us-east
+
+        itzpvs-2f7aa2pj:
+          ansible_host: 169.57.233.13
+          ansible_user: UV7PUIM
+          ansible_ssh_private_key_file: ~/.ssh/itzpvs-2f7aa2pj.pem          
+          
+          # IBM i specific connection settings
+          ansible_shell_type: sh
+          ansible_shell_executable: /QOpenSys/pkgs/bin/bash
+          
+          # Python interpreter - Two-Phase Bootstrap Approach
+          ansible_python_interpreter: /QOpenSys/pkgs/bin/python3
+          
+          # Host-specific variables
+          ibmi_system_name: itzpvs-eg50r0pj
+          ibmi_environment: techzone
+          techzone_region: br-sao
+
+        # Techzone Reservation 2 - Brazil São Paulo
+        itzpvs-63e3c2pj:
+          ansible_host: 169.57.180.74
+          ansible_user: UD9JCG4
+          ansible_ssh_private_key_file: ~/.ssh/itzpvs-63e3c2pj.pem          
+
+          
+          # IBM i specific connection settings
+          ansible_shell_type: sh
+          ansible_shell_executable: /QOpenSys/pkgs/bin/bash
+          
+          # Python interpreter - Two-Phase Bootstrap Approach
+          ansible_python_interpreter: /QOpenSys/pkgs/bin/python3
+          
+          # Host-specific variables
+          ibmi_system_name: itzpvs-vn01r0pj
+          ibmi_environment: techzone
+          techzone_region: br-sao
+

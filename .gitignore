@@ -16,3 +16,5 @@ Thumbs.db
 
 # Ansible
 *.retry
+# TechZone credential exports
+ibmi_reservations.csv

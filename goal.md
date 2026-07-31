@@ -15,5 +15,5 @@ LANG=EN_US.UTF-8
 export LANG
 
 * in the 'Db2 for i' extension: Examples → Miscellaneous → Call Create SQL Sample with Schema
-run this SQL command: CALL QSYS.CREATE_SQL_SAMPLE('SAMCO');
+run this SQL command: CALL QSYS.CREATE_SQL_SAMPLE('itzpvs-5b7372pj');
 * build the ibmi-company_system project using '/QOpenSys/pkgs/bin/makei build'
