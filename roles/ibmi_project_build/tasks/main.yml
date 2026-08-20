@@ -61,6 +61,42 @@
     msg: "Found {{ existing_artifacts.matched }} existing build artifacts"
   tags: [build, compile, check]
 
+- name: Deploy SAMCOn source to QSYS library SAMSRCn
+  ansible.builtin.shell: |
+    export PATH=/QOpenSys/usr/bin:/QOpenSys/pkgs/bin:$PATH
+    {{ repository_dest }}/setup/1_deploy_samco_src_to_qsys.sh --library SAMSRCn
+  args:
+    executable: /QOpenSys/pkgs/bin/bash
+  register: deploy_src_result
+  changed_when: deploy_src_result.rc == 0
+  failed_when: deploy_src_result.rc not in [0, 255]
+  tags: [build, compile, deploy]
+
+- name: Display deploy source output
+  ansible.builtin.debug:
+    msg: "{{ deploy_src_result.stdout_lines }}"
+  when: deploy_src_result.stdout_lines is defined
+  tags: [build, compile, deploy]
+
+- name: Display deploy source errors
+  ansible.builtin.debug:
+    msg: "{{ deploy_src_result.stderr_lines }}"
+  when:
+    - deploy_src_result.stderr_lines is defined
+    - deploy_src_result.stderr_lines | length > 0
+  tags: [build, compile, deploy]
+
+- name: Assert deploy source succeeded
+  ansible.builtin.assert:
+    that:
+      - deploy_src_result.rc in [0, 255]
+    fail_msg: >
+      Deploy script failed (rc={{ deploy_src_result.rc }}).
+      STDOUT: {{ deploy_src_result.stdout }}
+      STDERR: {{ deploy_src_result.stderr }}
+    success_msg: "Deploy source to QSYS completed (rc={{ deploy_src_result.rc }})"
+  tags: [build, compile, deploy]
+
 - name: Clean previous build if force rebuild
   ansible.builtin.shell: |
     cd {{ project_dir }} && {{ build_command | replace('build', 'clean') }}
