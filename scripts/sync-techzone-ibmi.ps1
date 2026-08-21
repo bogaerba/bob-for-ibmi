@@ -80,10 +80,12 @@ if (-not $TechZoneToken) {
 $McpUrl = $null
 if (Test-Path $BobMcpJson) {
     $mcpConfig = Get-Content $BobMcpJson -Raw | ConvertFrom-Json
-    $McpUrl = $mcpConfig.mcpServers.techzone.url
+    if ($mcpConfig.mcpServers.PSObject.Properties['techzone']) {
+        $McpUrl = $mcpConfig.mcpServers.techzone.url
+    }
 }
 if (-not $McpUrl) {
-    throw "Could not find TechZone MCP server URL in .bob/mcp.json"
+    throw "Could not find TechZone MCP server URL in .bob/mcp.json (no 'techzone' server entry)"
 }
 Write-Host "  [mcp]   $McpUrl" -ForegroundColor DarkGray
 

@@ -18,6 +18,9 @@ Thumbs.db
 *.retry
 # TechZone credential exports
 ibmi_reservations.csv
+ibmi_reservations.xlsx
+techzone-key.txt
+
 
 # Bob
 .bob/mcp.json
