@@ -7,6 +7,7 @@ Comprehensive Ansible playbook to prepare IBM i LPARs for IBM Bob development en
 - [Overview](#overview)
 - [Features](#features)
 - [Prerequisites](#prerequisites)
+- [TechZone Integration](#techzone-integration)
 - [Quick Start](#quick-start)
 - [Project Structure](#project-structure)
 - [Installation](#installation)
@@ -40,6 +41,7 @@ The playbook is designed to be **idempotent**, **modular**, and **production-rea
 - **Modular Design**: 7 specialized roles for different setup phases
 - **Tag-Based Execution**: Run specific parts of the setup as needed
 - **Multi-Environment**: Separate configurations for development and production
+- **TechZone Integration**: Auto-sync IBM i reservations into inventory and Bob settings
 - **Comprehensive Logging**: Detailed logs for troubleshooting
 - **Error Handling**: Robust error detection and recovery
 - **Validation**: Extensive verification at each step
@@ -71,6 +73,126 @@ The playbook is designed to be **idempotent**, **modular**, and **production-rea
 - Internet connectivity on IBM i for package downloads
 - Access to GitHub for repository cloning
 
+---
+
+## TechZone Integration
+
+The [`scripts/sync-techzone-ibmi.ps1`](scripts/sync-techzone-ibmi.ps1) PowerShell script automates discovery of active IBM i reservations on IBM TechZone and syncs them into:
+
+| Target | What gets written |
+|---|---|
+| `inventory/production/hosts.yml` | Host entry with IP, user, key, IBM i vars |
+| `%APPDATA%\IBM Bob\User\settings.json` | Bob for IBM i connection + connectionSettings |
+| `~/.ssh/<hostname>.pem` | SSH private key from the reservation |
+| `ibmi_reservations.csv` | Reservation summary (hostname, IP, schedule, …) |
+
+### Requirements
+
+- **PowerShell 5.1** or higher (Windows built-in)
+- **IBM Bob for IBM i** installed (for settings.json sync)
+- **TechZone API token** — a personal bearer token from [techzone.ibm.com](https://techzone.ibm.com)
+- **`.bob/mcp.json`** configured with a `techzone` MCP server entry (see below)
+
+### Configure `.bob/mcp.json`
+
+The script reads the TechZone MCP server URL from `.bob/mcp.json`. Add a `techzone` entry alongside any existing servers:
+
+```json
+{
+  "mcpServers": {
+    "techzone": {
+      "type": "streamable-http",
+      "url": "https://mcp.techzone.ibm.com/servers/<your-server-id>/mcp",
+      "headers": {
+        "TechZone-Token": "<your-techzone-token>"
+      }
+    }
+  }
+}
+```
+
+> **Security**: Do not commit `mcp.json` with real tokens. The repo's `.gitignore` excludes `techzone-key.txt`; treat `mcp.json` the same way if it contains a live token.
+
+### Token Resolution Order
+
+The script resolves the bearer token in this priority order:
+
+1. `-TechZoneToken` parameter (command-line)
+2. `techzone-key.txt` in the repo root (plain text, one line)
+3. `TechZone-Token` header in `.bob/mcp.json` → `mcpServers.techzone`
+
+### Running the Script
+
+**Basic usage** (token from `techzone-key.txt` or `mcp.json`):
+
+```powershell
+.\scripts\sync-techzone-ibmi.ps1
+```
+
+**Pass the token explicitly:**
+
+```powershell
+.\scripts\sync-techzone-ibmi.ps1 -TechZoneToken "your-token-here"
+```
+
+**Dry run** — preview all changes without writing any files:
+
+```powershell
+.\scripts\sync-techzone-ibmi.ps1 -DryRun
+```
+
+**Custom inventory file:**
+
+```powershell
+.\scripts\sync-techzone-ibmi.ps1 -InventoryFile "inventory/development/hosts.yml"
+```
+
+**Combined options:**
+
+```powershell
+.\scripts\sync-techzone-ibmi.ps1 -TechZoneToken "your-token" -InventoryFile "inventory/development/hosts.yml" -DryRun
+```
+
+### What the Script Does
+
+1. **Fetches** all `Ready` reservations from TechZone via the MCP server
+2. **Filters** to IBM i reservations (name matches `IBM i`)
+3. **For each reservation**, retrieves full details: hostname, public IP, username, password, SSH private key, port, region, schedule
+4. **Writes** the SSH private key to `~/.ssh/<hostname>.pem`
+5. **Upserts** the host in `inventory/production/hosts.yml` (adds if new, updates IP if existing)
+6. **Upserts** the connection in Bob's `settings.json` (name, host, port, user, key path)
+7. **Upserts** a row in `ibmi_reservations.csv` keyed by TechZone request ID
+
+After running the script, the production inventory is ready to use with the playbook immediately.
+
+### Output Files
+
+#### `inventory/production/hosts.yml`
+
+Each synced host gets these variables:
+
+```yaml
+ibmi_servers:
+  hosts:
+    itzpvs-acdq280k:
+      ansible_host: 161.156.191.98
+      ansible_user: ITZUSER
+      ansible_ssh_private_key_file: ~/.ssh/itzpvs-acdq280k.pem
+      ansible_port: 22
+      ansible_shell_type: sh
+      ansible_shell_executable: /QOpenSys/pkgs/bin/bash
+      ansible_python_interpreter: /QOpenSys/pkgs/bin/python3
+      ibmi_system_name: itzpvs-acdq280k
+      ibmi_environment: techzone
+      techzone_region: eu-de
+```
+
+#### `ibmi_reservations.csv`
+
+Columns: `Name`, `Status`, `Environment`, `Hostname`, `Public IP`, `SSH Port`, `Username`, `Password`, `TechZone URL`, `Schedule`, `Region`, `Request ID`, `Shared With`
+
+---
+
 ## Quick Start
 
 ### 1. Clone This Repository
@@ -82,13 +204,16 @@ cd bob-for-ibmi
 
 ### 2. Configure Inventory
 
-Edit the inventory file for your environment:
+**Option A — Auto-populate from TechZone** (recommended for TechZone users):
+
+```powershell
+# Windows PowerShell
+.\scripts\sync-techzone-ibmi.ps1
+```
+
+**Option B — Manual configuration:**
 
 ```bash
-# For development
-vi inventory/development/hosts.yml
-
-# For production
 vi inventory/production/hosts.yml
 ```
 
@@ -100,21 +225,21 @@ Update these required fields:
 ### 3. Test Connectivity
 
 ```bash
-# Test development environment
-ansible -i inventory/development/hosts.yml ibmi_servers -m ping
-
 # Test production environment
 ansible -i inventory/production/hosts.yml ibmi_servers -m ping
+
+# Test development environment
+ansible -i inventory/development/hosts.yml ibmi_servers -m ping
 ```
 
 ### 4. Run the Playbook
 
 ```bash
+# Full setup - production (default inventory)
+ansible-playbook site.yml
+
 # Full setup - development
 ansible-playbook -i inventory/development/hosts.yml site.yml
-
-# Full setup - production
-ansible-playbook -i inventory/production/hosts.yml site.yml
 ```
 
 ## Project Structure
@@ -123,7 +248,7 @@ ansible-playbook -i inventory/production/hosts.yml site.yml
 bob-for-ibmi/
 ├── README.md                          # This file
 ├── ansible.cfg                        # Ansible configuration
-├── site.yml                          # Main playbook
+├── site.yml                          # Main playbook (3-phase bootstrap)
 ├── group_vars/
 │   └── all.yml                       # Global variables
 ├── inventory/
@@ -134,7 +259,7 @@ bob-for-ibmi/
 │   │   └── group_vars/
 │   │       └── ibmi_servers.yml      # Development variables
 │   └── production/
-│       ├── hosts.yml                 # Production hosts
+│       ├── hosts.yml                 # Production hosts (auto-updated by sync script)
 │       └── group_vars/
 │           └── ibmi_servers.yml      # Production variables
 ├── roles/
@@ -145,6 +270,9 @@ bob-for-ibmi/
 │   ├── ibmi_repository/             # Git repository cloning
 │   ├── ibmi_database/               # Database schema creation
 │   └── ibmi_project_build/          # Project build
+├── scripts/
+│   └── sync-techzone-ibmi.ps1        # TechZone → inventory/Bob sync script
+├── ibmi_reservations.csv             # TechZone reservation summary (auto-generated)
 └── docs/
     └── ansible-design.md            # Detailed design documentation
 ```
@@ -185,6 +313,8 @@ ssh-copy-id -i ~/.ssh/id_rsa_ibmi.pub user@ibmi-host
 ssh -i ~/.ssh/id_rsa_ibmi user@ibmi-host
 ```
 
+> **TechZone users**: The sync script writes the reservation's SSH private key to `~/.ssh/<hostname>.pem` automatically — no manual key setup needed.
+
 ## Configuration
 
 ### Global Variables
@@ -218,24 +348,25 @@ Edit environment-specific variables in:
 
 The `ansible.cfg` file contains optimized settings for IBM i:
 
-- Default inventory: `inventory/production/hosts.yml`
-- SSH pipelining enabled for performance
-- YAML output format for readability
-- Fact caching for faster execution
-- Detailed logging to `/tmp/ansible-ibmi.log`
+- **Default inventory**: `inventory/production/hosts.yml`
+- **SSH pipelining** enabled for performance
+- **YAML output** format for readability
+- **Fact caching** to `/tmp/ansible_facts` (1 hour TTL)
+- **Detailed logging** to `/tmp/ansible-ibmi.log`
+- **Python interpreter**: `/QOpenSys/pkgs/bin/python3` (overridden per-play)
 
 ## Usage
 
 ### Full Setup
 
-Run the complete playbook to set up everything:
+Run the complete three-phase playbook:
 
 ```bash
+# Production environment (uses default inventory from ansible.cfg)
+ansible-playbook site.yml
+
 # Development environment
 ansible-playbook -i inventory/development/hosts.yml site.yml
-
-# Production environment
-ansible-playbook -i inventory/production/hosts.yml site.yml
 ```
 
 ### Tag-Based Execution
@@ -244,38 +375,40 @@ Run specific parts of the setup using tags:
 
 ```bash
 # Only prerequisites and packages
-ansible-playbook -i inventory/development/hosts.yml site.yml --tags "prerequisites,packages"
+ansible-playbook site.yml --tags "prerequisites,packages"
 
 # Only repository and build
-ansible-playbook -i inventory/development/hosts.yml site.yml --tags "repository,build"
+ansible-playbook site.yml --tags "repository,build"
 
 # Skip database setup
-ansible-playbook -i inventory/development/hosts.yml site.yml --skip-tags "database"
+ansible-playbook site.yml --skip-tags "database"
 ```
 
 ### Available Tags
 
-- `prerequisites` - System prerequisites verification
-- `setup` - Initial setup tasks (prerequisites, yum, packages)
-- `yum` - YUM package manager setup
-- `packages` - Package installation
-- `profile` - Bash profile configuration
-- `config` - Configuration tasks
-- `repository` - Git repository cloning
-- `git` - Git-related tasks
-- `database` - Database schema creation
-- `sql` - SQL-related tasks
-- `build` - Project build
-- `compile` - Compilation tasks
+| Tag | Description |
+|---|---|
+| `prerequisites` | System prerequisites verification |
+| `setup` | Initial setup tasks (prerequisites, yum, packages) |
+| `yum` | YUM package manager setup |
+| `packages` | Package installation |
+| `profile` | Bash profile configuration |
+| `config` | Configuration tasks |
+| `repository` | Git repository cloning |
+| `git` | Git-related tasks |
+| `database` | Database schema creation |
+| `sql` | SQL-related tasks |
+| `build` | Project build |
+| `compile` | Compilation tasks |
 
 ### Limit to Specific Hosts
 
 ```bash
 # Run on a single host
-ansible-playbook -i inventory/production/hosts.yml site.yml --limit ibmi-prod-01
+ansible-playbook -i inventory/production/hosts.yml site.yml --limit itzpvs-acdq280k
 
 # Run on multiple hosts
-ansible-playbook -i inventory/production/hosts.yml site.yml --limit ibmi-prod-01,ibmi-prod-02
+ansible-playbook -i inventory/production/hosts.yml site.yml --limit itzpvs-acdq280k,itzpvs-ombq280k
 ```
 
 ### Check Mode (Dry Run)
@@ -283,27 +416,34 @@ ansible-playbook -i inventory/production/hosts.yml site.yml --limit ibmi-prod-01
 Preview changes without making them:
 
 ```bash
-ansible-playbook -i inventory/development/hosts.yml site.yml --check
+ansible-playbook site.yml --check
 ```
 
 ### Verbose Output
 
-Increase verbosity for troubleshooting:
-
 ```bash
-# Basic verbosity
-ansible-playbook -i inventory/development/hosts.yml site.yml -v
-
-# More detail
-ansible-playbook -i inventory/development/hosts.yml site.yml -vv
-
-# Debug level
-ansible-playbook -i inventory/development/hosts.yml site.yml -vvv
+ansible-playbook site.yml -v    # basic
+ansible-playbook site.yml -vv   # more detail
+ansible-playbook site.yml -vvv  # debug level
 ```
 
 ## Roles
 
-The playbook consists of 7 specialized roles that execute in sequence:
+The playbook runs across **three plays** that execute in sequence:
+
+### Play 0 — Pre-Bootstrap (raw SSH, no Python required)
+
+Installs Python 3.9 using raw `yum` commands before any Ansible modules execute. Skipped if Python 3.9 is already present.
+
+### Play 1 — Bootstrap (Python 3.9)
+
+Runs roles: `ibmi_prerequisites` → `ibmi_yum_setup` → `ibmi_packages`
+
+### Play 2 — Configure (Python 3.9)
+
+Runs roles: `ibmi_bash_profile` → `ibmi_repository` → `ibmi_database` → `ibmi_project_build`
+
+---
 
 ### 1. ibmi_prerequisites
 
@@ -338,17 +478,17 @@ The playbook consists of 7 specialized roles that execute in sequence:
 **Purpose**: Install required open-source packages
 
 **Packages Installed**:
-- git - Version control
-- tn5250 - Terminal emulator
-- service-commander - Service management
-- mapepire-server - Database connectivity
-- rsync - File synchronization
-- ibmichroot - Chroot environment
-- nano - Text editor
-- tobi - IBM i tools
-- python39-itoolkit.ppc64 - Python interface to IBM i XMLSERVICE
+- `git` — Version control
+- `tn5250` — Terminal emulator
+- `service-commander` — Service management
+- `mapepire-server` — Database connectivity
+- `rsync` — File synchronization
+- `ibmichroot` — Chroot environment
+- `nano` — Text editor
+- `tobi` — IBM i tools
+- `python39-itoolkit.ppc64` — Python interface to IBM i XMLSERVICE
 
-**Note**: Python 3.9 is installed separately in Phase 0 (Pre-Bootstrap) using raw SSH commands before any Ansible modules execute.
+> Python 3.9 itself is installed in Phase 0 (Pre-Bootstrap) using raw SSH commands.
 
 **Documentation**: [`roles/ibmi_packages/README.md`](roles/ibmi_packages/README.md)
 
@@ -426,6 +566,25 @@ The playbook consists of 7 specialized roles that execute in sequence:
 
 ## Troubleshooting
 
+### TechZone Sync Issues
+
+**Problem**: `Could not find TechZone MCP server URL in .bob/mcp.json`
+
+**Solution**: Add a `techzone` entry to `.bob/mcp.json` (see [Configure `.bob/mcp.json`](#configure-bobmcpjson)).
+
+**Problem**: `No TechZoneToken found`
+
+**Solutions**:
+1. Create `techzone-key.txt` in the repo root containing your token
+2. Add the token to the `TechZone-Token` header in `.bob/mcp.json`
+3. Pass it directly: `.\scripts\sync-techzone-ibmi.ps1 -TechZoneToken "..."`
+
+**Problem**: `No active IBM i reservations found`
+
+**Solutions**:
+1. Verify the reservation status is `Ready` on [techzone.ibm.com/my/reservations](https://techzone.ibm.com/my/reservations)
+2. Check that the reservation name contains `IBM i`
+
 ### Connection Issues
 
 **Problem**: Cannot connect to IBM i via SSH
@@ -434,7 +593,7 @@ The playbook consists of 7 specialized roles that execute in sequence:
 1. Verify SSH service is running: `STRTCPSVR SERVER(*SSHD)`
 2. Check firewall rules allow port 22
 3. Verify SSH key permissions (600 for private key)
-4. Test manual connection: `ssh -i ~/.ssh/id_rsa_ibmi user@host`
+4. Test manual connection: `ssh -i ~/.ssh/itzpvs-<id>.pem ITZUSER@<ip>`
 
 ### Authentication Issues
 
@@ -486,17 +645,10 @@ The playbook consists of 7 specialized roles that execute in sequence:
 3. Check user has authority to create objects
 4. Ensure all dependencies are installed
 
-### Detailed Troubleshooting
-
-For more troubleshooting information, see:
-- [Inventory README - Troubleshooting Section](inventory/README.md#troubleshooting)
-- [Design Documentation - Error Handling](docs/ansible-design.md#error-handling-and-idempotency)
-- Individual role README files
-
 ### Getting Help
 
-1. Check verbose output: `ansible-playbook ... -vvv`
-2. Review log file: `/tmp/ansible-ibmi.log`
+1. Check verbose output: `ansible-playbook site.yml -vvv`
+2. Review log file: `cat /tmp/ansible-ibmi.log`
 3. Check role-specific logs in user's home directory
 4. Consult role-specific README files
 5. Review design documentation for architecture details
@@ -538,48 +690,67 @@ This project is created for IBM Bob for IBM i setup automation.
 
 The complete setup workflow:
 
-1. **Pre-Bootstrap** → Install Python 3.9 using raw SSH commands (no Python required)
-2. **Prerequisites** → Verify system meets requirements
-3. **YUM Setup** → Install/configure package manager
-4. **Packages** → Install required open-source tools (9 packages)
-5. **Bash Profile** → Configure user environment
-6. **Repository** → Clone project from GitHub
-7. **Database** → Create sample schema
-8. **Build** → Compile project
+1. **[Windows] TechZone Sync** → Run `sync-techzone-ibmi.ps1` to populate inventory from active reservations
+2. **Pre-Bootstrap** → Install Python 3.9 using raw SSH commands (no Python required)
+3. **Prerequisites** → Verify system meets requirements
+4. **YUM Setup** → Install/configure package manager
+5. **Packages** → Install required open-source tools (9 packages)
+6. **Bash Profile** → Configure user environment
+7. **Repository** → Clone project from GitHub
+8. **Database** → Create sample schema
+9. **Build** → Compile project
 
-**Total Execution Time**: Approximately 15-25 minutes for first run, 5-10 minutes for subsequent runs.
+**Total Execution Time**: Approximately 15–25 minutes for first run, 5–10 minutes for subsequent runs.
 
 ## Quick Reference
 
-### Common Commands
+### TechZone Sync (PowerShell)
+
+```powershell
+# Sync all active IBM i reservations into inventory + Bob settings
+.\scripts\sync-techzone-ibmi.ps1
+
+# Preview without writing files
+.\scripts\sync-techzone-ibmi.ps1 -DryRun
+
+# Pass token explicitly
+.\scripts\sync-techzone-ibmi.ps1 -TechZoneToken "your-token"
+```
+
+### Ansible Playbook
 
 ```bash
-# Full setup
-ansible-playbook -i inventory/development/hosts.yml site.yml
+# Full setup (production — default inventory)
+ansible-playbook site.yml
 
-# Check mode (dry run)
-ansible-playbook -i inventory/development/hosts.yml site.yml --check
+# Check mode
+ansible-playbook site.yml --check
 
 # Only install packages
-ansible-playbook -i inventory/development/hosts.yml site.yml --tags packages
+ansible-playbook site.yml --tags packages
 
 # Skip database setup
-ansible-playbook -i inventory/development/hosts.yml site.yml --skip-tags database
+ansible-playbook site.yml --skip-tags database
 
 # Verbose output
-ansible-playbook -i inventory/development/hosts.yml site.yml -vvv
+ansible-playbook site.yml -vvv
 
 # Limit to specific host
-ansible-playbook -i inventory/production/hosts.yml site.yml --limit ibmi-prod-01
+ansible-playbook site.yml --limit itzpvs-acdq280k
 ```
 
 ### Important Files
 
-- `site.yml` - Main playbook
-- `ansible.cfg` - Ansible configuration
-- `group_vars/all.yml` - Global variables
-- `inventory/*/hosts.yml` - Host definitions
-- `/tmp/ansible-ibmi.log` - Execution log
+| File | Purpose |
+|---|---|
+| `site.yml` | Main playbook |
+| `ansible.cfg` | Ansible configuration (default inventory, SSH, logging) |
+| `group_vars/all.yml` | Global variables |
+| `inventory/production/hosts.yml` | Production host definitions (auto-updated by sync script) |
+| `inventory/development/hosts.yml` | Development host definitions |
+| `scripts/sync-techzone-ibmi.ps1` | TechZone → inventory sync script |
+| `ibmi_reservations.csv` | Reservation summary (auto-generated) |
+| `/tmp/ansible-ibmi.log` | Ansible execution log |
 
 ### Support Resources
 
