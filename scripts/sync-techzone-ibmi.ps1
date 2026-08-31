@@ -7,12 +7,12 @@
       - ibmi_reservations.csv                  (reservation summary)
 
 .DESCRIPTION
-    Calls the TechZone MCP server (same as used by Bob internally) to list
-    active reservations, fetches full details for each IBM i one, then:
-      1. Writes the SSH private key to ~/.ssh/<hostname>.pem
-      2. Upserts the host entry in inventory/production/hosts.yml
-      3. Upserts the connection + connectionSettings in Bob's settings.json
-      4. Upserts rows in ibmi_reservations.csv
+   Calls the TechZone MCP server (same as used by Bob internally) to list
+   active reservations, fetches full details for each IBM i one, then:
+     1. Writes the SSH private key to ~/.ssh/<hostname>.pem
+     2. Upserts the host entry in inventory/production/hosts.yml
+     3. Upserts the connection + connectionSettings in Bob's settings.json
+     4. Upserts rows in ibmi_reservations.csv
 
 .PARAMETER TechZoneToken
     Your TechZone API bearer token. If omitted, reads from techzone-key.txt
@@ -80,12 +80,10 @@ if (-not $TechZoneToken) {
 $McpUrl = $null
 if (Test-Path $BobMcpJson) {
     $mcpConfig = Get-Content $BobMcpJson -Raw | ConvertFrom-Json
-    if ($mcpConfig.mcpServers.PSObject.Properties['techzone']) {
-        $McpUrl = $mcpConfig.mcpServers.techzone.url
-    }
+    $McpUrl = $mcpConfig.mcpServers.techzone.url
 }
 if (-not $McpUrl) {
-    throw "Could not find TechZone MCP server URL in .bob/mcp.json (no 'techzone' server entry)"
+    throw "Could not find TechZone MCP server URL in .bob/mcp.json"
 }
 Write-Host "  [mcp]   $McpUrl" -ForegroundColor DarkGray
 
@@ -269,7 +267,7 @@ $parsed = foreach ($res in $ibmiReservations) {
     Write-Host "    username  : $username"   -ForegroundColor DarkGray
     Write-Host "    region    : $geo"        -ForegroundColor DarkGray
 
-    # Capture schedule and environment title for the CSV while $detail is in scope
+    # --- fields for CSV (captured while $detail is in scope) ---
     $scheduleStr = ''
     if ($detail.PSObject.Properties['schedule'] -and $detail.schedule) {
         $s = $detail.schedule
@@ -277,16 +275,15 @@ $parsed = foreach ($res in $ibmiReservations) {
         $schedEnd    = if ($s.PSObject.Properties['end']   -and $s.end)   { $s.end   -replace 'T', ' ' -replace '\.\d+Z$', ' UTC' } else { '' }
         $scheduleStr = "$schedStart-$schedEnd"
     }
+
     $envTitle = $res.name
     if ($env.PSObject.Properties['title'] -and $env.title) { $envTitle = $env.title }
 
-    # Collect shared IBMid from access.maintain.users[1] (index 0 is the owner)
     $sharedWith = ''
     if ($detail.PSObject.Properties['access'] -and $detail.access -and
         $detail.access.PSObject.Properties['maintain'] -and $detail.access.maintain -and
-        $detail.access.maintain.PSObject.Properties['users'] -and $detail.access.maintain.users -and
-        @($detail.access.maintain.users).Count -gt 1) {
-        $sharedWith = @($detail.access.maintain.users)[1]
+        $detail.access.maintain.PSObject.Properties['users'] -and $detail.access.maintain.users) {
+        $sharedWith = ($detail.access.maintain.users | Where-Object { $_ }) -join ';'
     }
 
     [PSCustomObject]@{
@@ -489,41 +486,39 @@ if (-not $DryRun) {
 Write-Host ""
 Write-Host "==> Updating CSV: $CsvFile ..." -ForegroundColor Cyan
 
-$csvHeader = 'Name,Status,Environment,Hostname,Public IP,SSH Port,Username,Password,TechZone URL,Schedule,Region,Request ID,Shared With'
+$csvHeader = 'Name;Status;Environment;Hostname;Public IP;SSH Port;Username;Password;TechZone URL;Schedule;Region;Request ID;Shared With'
 
-# Helper: RFC-4180 CSV field escaping
+# Helper: quote a field if it contains the delimiter, a quote, or a newline
 function EscapeCsvField([string]$v) {
-    if ($v -match '[",\r\n]') { return '"' + $v.Replace('"', '""') + '"' }
+    if ($v -match '[";`r`n]') { return '"' + $v.Replace('"', '""') + '"' }
     return $v
 }
 
-# Load existing rows keyed by Request ID so we preserve rows from past runs
+# Load existing rows keyed by Request ID so rows from past runs are preserved
 $existingRows = [ordered]@{}
 if (Test-Path $CsvFile) {
     $csvLines = Get-Content $CsvFile
     foreach ($line in $csvLines) {
-        # Skip the header line
-        if ($line -match '^(?:[\uFEFF]?)Name,') { continue }
-        # The Request ID is the last field (24-char hex, never quoted)
-        if ($line -match ',([a-f0-9]{24})\s*$') {
+        if ($line -match '^(?:[\uFEFF]?)Name;') { continue }   # skip header (incl. BOM)
+        if ($line -match ';([a-f0-9]{24})[^;]*$') {            # Request ID is 24-char hex
             $existingRows[$Matches[1]] = $line
         }
     }
 }
 
 foreach ($r in $parsed) {
-    $row = (EscapeCsvField $r.Name)      + ',' +
-           'Ready'                        + ',' +
-           (EscapeCsvField $r.EnvTitle)  + ',' +
-           (EscapeCsvField $r.Hostname)  + ',' +
-           (EscapeCsvField $r.PublicIp)  + ',' +
-           $r.SshPort                    + ',' +
-           (EscapeCsvField $r.Username)  + ',' +
-           (EscapeCsvField $r.Password)  + ',' +
-           "https://techzone.ibm.com/my/requests/$($r.ReservationId)" + ',' +
-           (EscapeCsvField $r.Schedule)  + ',' +
-           (EscapeCsvField $r.Geo)       + ',' +
-           $r.ReservationId                                                 + ',' +
+    $row = (EscapeCsvField $r.Name)       + ';' +
+           'Ready'                         + ';' +
+           (EscapeCsvField $r.EnvTitle)   + ';' +
+           (EscapeCsvField $r.Hostname)   + ';' +
+           (EscapeCsvField $r.PublicIp)   + ';' +
+           $r.SshPort                     + ';' +
+           (EscapeCsvField $r.Username)   + ';' +
+           (EscapeCsvField $r.Password)   + ';' +
+           "https://techzone.ibm.com/my/requests/$($r.ReservationId)" + ';' +
+           (EscapeCsvField $r.Schedule)   + ';' +
+           (EscapeCsvField $r.Geo)        + ';' +
+           $r.ReservationId               + ';' +
            (EscapeCsvField $r.SharedWith)
 
     $existingRows[$r.ReservationId] = $row

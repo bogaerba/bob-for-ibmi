@@ -1,0 +1,230 @@
+
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>IBM i 7.6 PowerVS — Environment Access Details</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #1f2328;
+    background: #ffffff;
+    padding: 32px 24px;
+  }
+  .wrapper { max-width: 760px; margin: 0 auto; }
+  .header {
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+  }
+  .header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1f2328;
+  }
+  .header p {
+    color: #57606a;
+    margin-top: 4px;
+    font-size: 13px;
+  }
+  .badge {
+    display: inline-block;
+    background: #dcfce7;
+    color: #166534;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 12px;
+    margin-top: 8px;
+  }
+  .section {
+    background: #f7f8fa;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+  }
+  .section h2 {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #57606a;
+    margin-bottom: 12px;
+  }
+  .row {
+    display: flex;
+    align-items: flex-start;
+    padding: 6px 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .row:last-child { border-bottom: none; }
+  .label {
+    width: 200px;
+    flex-shrink: 0;
+    color: #57606a;
+    font-size: 13px;
+  }
+  .value {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 13px;
+    color: #1f2328;
+    word-break: break-all;
+  }
+  .value.plain {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+  }
+  .value.masked {
+    color: #57606a;
+    font-style: italic;
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 13px;
+  }
+  .key-block {
+    background: #1f2328;
+    color: #d4d4d4;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    padding: 12px 16px;
+    border-radius: 4px;
+    margin-top: 8px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .note {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #78350f;
+    margin-bottom: 16px;
+  }
+  .note strong { color: #92400e; }
+  .link {
+    color: #3b82d4;
+    text-decoration: none;
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+  }
+  .link:hover { text-decoration: underline; }
+  footer {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
+    text-align: center;
+    font-size: 12px;
+    color: #57606a;
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <div class="header">
+    <h1>IBM i 7.6 — PowerVS Environment Access</h1>
+    <p>To: bart_bogaerts@yahoo.com</p>
+    <span class="badge">✓ Ready</span>
+  </div>
+
+  <div class="note">
+    <strong>Note:</strong> The SSH private key below gives full access to this environment. Keep it confidential and do not share it further. Save it as a <code>.pem</code> file and restrict permissions with <code>chmod 400</code> before use.
+  </div>
+
+  
+  <div class="section">
+    <h2>Reservation</h2>
+    <div class="row">
+      <span class="label">Environment</span>
+      <span class="value plain">IBM i 7.6 IBM Cloud PowerVS VSI</span>
+    </div>
+    <div class="row">
+      <span class="label">Region</span>
+      <span class="value plain">eu-de — Frankfurt (fra04)</span>
+    </div>
+    <div class="row">
+      <span class="label">Purpose</span>
+      <span class="value plain">Pilot</span>
+    </div>
+    <div class="row">
+      <span class="label">Request ID</span>
+      <span class="value">6a8877f865158f1b16546f28</span>
+    </div>
+    <div class="row">
+      <span class="label">Schedule</span>
+      <span class="value plain">2026-08-21 → 2026-08-28 (UTC)</span>
+    </div>
+    <div class="row">
+      <span class="label">TechZone URL</span>
+      <span class="value plain"><a class="link" href="https://techzone.ibm.com/my/requests/6a8877f865158f1b16546f28">techzone.ibm.com/my/requests/6a8877f865158f1b16546f28</a></span>
+    </div>
+  </div>
+
+  
+  <div class="section">
+    <h2>Connection Details</h2>
+    <div class="row">
+      <span class="label">Hostname</span>
+      <span class="value">itzpvs-ucc9hi0k</span>
+    </div>
+    <div class="row">
+      <span class="label">Public IP</span>
+      <span class="value">161.156.22.60</span>
+    </div>
+    <div class="row">
+      <span class="label">Private IP</span>
+      <span class="value">192.168.191.60</span>
+    </div>
+    <div class="row">
+      <span class="label">SSH Port</span>
+      <span class="value">22</span>
+    </div>
+  </div>
+
+  
+  <div class="section">
+    <h2>Credentials</h2>
+    <div class="row">
+      <span class="label">Username</span>
+      <span class="value">ITZUSER</span>
+    </div>
+    <div class="row">
+      <span class="label">Password</span>
+      <span class="value masked">(see secure channel — do not transmit over email)</span>
+    </div>
+    <div class="row">
+      <span class="label">Auth method</span>
+      <span class="value plain">SSH key required (password login disabled)</span>
+    </div>
+  </div>
+
+  
+  <div class="section">
+    <h2>SSH Private Key</h2>
+    <p style="font-size:13px;color:#57606a;margin-bottom:8px">Save as <code>ibmi-itz.pem</code>, then connect with:</p>
+    <div class="key-block">chmod 400 ibmi-itz.pem
+ssh -i ibmi-itz.pem -p 22 ITZUSER@161.156.22.60</div>
+    <p style="font-size:12px;color:#57606a;margin-top:10px">The full private key is available to the reservation owner at the TechZone request URL above. Download it directly from the <strong>Environment Details</strong> page once logged in.</p>
+  </div>
+
+  
+  <div class="section">
+    <h2>Infrastructure</h2>
+    <div class="row">
+      <span class="label">IBM Cloud Account</span>
+      <span class="value">itz-shared-power</span>
+    </div>
+    <div class="row">
+      <span class="label">Infrastructure</span>
+      <span class="value plain">IBM Cloud PowerVS (ibmcloud-2)</span>
+    </div>
+  </div>
+
+  <footer>Made with IBM Bob</footer>
+</div>
+</body>
+</html>
