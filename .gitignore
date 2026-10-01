@@ -1,0 +1,31 @@
+# Python virtual environment
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Ansible
+*.retry
+# TechZone credential exports
+ibmi_reservations.csv
+ibmi_reservations.xlsx
+techzone-key.txt
+
+# Miscellaneous
+participants.csv
+participants_mailing.csv
+mailing.docx
+
+
+# Bob
+.bob/mcp.json
