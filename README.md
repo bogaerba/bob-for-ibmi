@@ -144,13 +144,13 @@ The script resolves the bearer token in this priority order:
 **Custom inventory file:**
 
 ```powershell
-.\scripts\sync-techzone-ibmi.ps1 -InventoryFile "inventory/development/hosts.yml"
+.\scripts\sync-techzone-ibmi.ps1 -InventoryFile "inventory/production/hosts.yml"
 ```
 
 **Combined options:**
 
 ```powershell
-.\scripts\sync-techzone-ibmi.ps1 -TechZoneToken "your-token" -InventoryFile "inventory/development/hosts.yml" -DryRun
+.\scripts\sync-techzone-ibmi.ps1 -TechZoneToken "your-token" -InventoryFile "inventory/production/hosts.yml" -DryRun
 ```
 
 ### What the Script Does
@@ -227,9 +227,6 @@ Update these required fields:
 ```bash
 # Test production environment
 ansible -i inventory/production/hosts.yml ibmi_servers -m ping
-
-# Test development environment
-ansible -i inventory/development/hosts.yml ibmi_servers -m ping
 ```
 
 ### 4. Run the Playbook
@@ -237,9 +234,6 @@ ansible -i inventory/development/hosts.yml ibmi_servers -m ping
 ```bash
 # Full setup - production (default inventory)
 ansible-playbook site.yml
-
-# Full setup - development
-ansible-playbook -i inventory/development/hosts.yml site.yml
 ```
 
 ## Project Structure
@@ -254,10 +248,6 @@ bob-for-ibmi/
 ├── inventory/
 │   ├── README.md                     # Inventory documentation
 │   ├── example-hosts.yml             # Template with all options
-│   ├── development/
-│   │   ├── hosts.yml                 # Development hosts
-│   │   └── group_vars/
-│   │       └── ibmi_servers.yml      # Development variables
 │   └── production/
 │       ├── hosts.yml                 # Production hosts (auto-updated by sync script)
 │       └── group_vars/
@@ -341,7 +331,6 @@ build_timeout: 600
 ### Environment-Specific Variables
 
 Edit environment-specific variables in:
-- `inventory/development/group_vars/ibmi_servers.yml`
 - `inventory/production/group_vars/ibmi_servers.yml`
 
 ### Ansible Configuration
@@ -364,9 +353,6 @@ Run the complete three-phase playbook:
 ```bash
 # Production environment (uses default inventory from ansible.cfg)
 ansible-playbook site.yml
-
-# Development environment
-ansible-playbook -i inventory/development/hosts.yml site.yml
 ```
 
 ### Tag-Based Execution
@@ -747,7 +733,6 @@ ansible-playbook site.yml --limit itzpvs-acdq280k
 | `ansible.cfg` | Ansible configuration (default inventory, SSH, logging) |
 | `group_vars/all.yml` | Global variables |
 | `inventory/production/hosts.yml` | Production host definitions (auto-updated by sync script) |
-| `inventory/development/hosts.yml` | Development host definitions |
 | `scripts/sync-techzone-ibmi.ps1` | TechZone → inventory sync script |
 | `ibmi_reservations.csv` | Reservation summary (auto-generated) |
 | `/tmp/ansible-ibmi.log` | Ansible execution log |

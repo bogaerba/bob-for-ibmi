@@ -1,0 +1,124 @@
+---
+# Role: ibmi_copy_libraries
+# Purpose: Copy SAMCOn (SAMCON) and SAMSRCn (SAMSRC) library templates n times
+#          using the setup scripts shipped with the IBM-i-Application-Modernization-with-Bob
+#          repository.
+
+- name: Validate library count
+  ansible.builtin.assert:
+    that:
+      - ibmi_library_count | int >= 1
+    fail_msg: "ibmi_library_count must be a positive integer (got: {{ ibmi_library_count }})"
+    success_msg: "Library count validated: {{ ibmi_library_count }}"
+  tags: [copy_libraries, validate]
+
+- name: Display library copy plan
+  ansible.builtin.debug:
+    msg:
+      - "=== LIBRARY COPY PHASE ==="
+      - "Will create {{ ibmi_library_count }} copy(s) of each library template"
+      - "  SAMCON  -> SAMCO1 ... SAMCO{{ ibmi_library_count }}"
+      - "  SAMSRCN -> SAMSRC1 ... SAMSRC{{ ibmi_library_count }}"
+      - "Scripts directory: {{ ibmi_setup_scripts_dir }}"
+  tags: [copy_libraries]
+
+- name: Verify setup scripts directory exists
+  ansible.builtin.stat:
+    path: "{{ ibmi_setup_scripts_dir }}"
+  register: scripts_dir_check
+  tags: [copy_libraries, verify]
+
+- name: Assert setup scripts directory exists
+  ansible.builtin.assert:
+    that:
+      - scripts_dir_check.stat.exists
+      - scripts_dir_check.stat.isdir
+    fail_msg: "Setup scripts directory not found: {{ ibmi_setup_scripts_dir }}"
+    success_msg: "Setup scripts directory confirmed: {{ ibmi_setup_scripts_dir }}"
+  tags: [copy_libraries, verify]
+
+- name: Verify 3_copy_lib_n_times.sh script exists
+  ansible.builtin.stat:
+    path: "{{ ibmi_setup_scripts_dir }}/3_copy_lib_n_times.sh"
+  register: copy_script_check
+  tags: [copy_libraries, verify]
+
+- name: Assert 3_copy_lib_n_times.sh is present and executable
+  ansible.builtin.assert:
+    that:
+      - copy_script_check.stat.exists
+    fail_msg: "Script not found: {{ ibmi_setup_scripts_dir }}/3_copy_lib_n_times.sh"
+    success_msg: "Script confirmed: {{ ibmi_setup_scripts_dir }}/3_copy_lib_n_times.sh"
+  tags: [copy_libraries, verify]
+
+- name: Ensure 3_copy_lib_n_times.sh is executable
+  ansible.builtin.file:
+    path: "{{ ibmi_setup_scripts_dir }}/3_copy_lib_n_times.sh"
+    mode: '0755'
+  tags: [copy_libraries, verify]
+
+- name: Copy SAMCON library {{ ibmi_library_count }} time(s) (base SAMCO)
+  ansible.builtin.shell: |
+    export PATH=/QOpenSys/usr/bin:/QOpenSys/pkgs/bin:$PATH
+    {{ ibmi_setup_scripts_dir }}/3_copy_lib_n_times.sh \
+      --from SAMCON \
+      --range 1 {{ ibmi_library_count }} \
+      --base SAMCO
+  args:
+    executable: /QOpenSys/pkgs/bin/bash
+  register: copy_samcon_result
+  changed_when: copy_samcon_result.rc == 0
+  failed_when: copy_samcon_result.rc != 0
+  tags: [copy_libraries, samcon]
+
+- name: Display SAMCON copy output
+  ansible.builtin.debug:
+    msg: "{{ copy_samcon_result.stdout_lines }}"
+  when: copy_samcon_result.stdout_lines is defined and copy_samcon_result.stdout_lines | length > 0
+  tags: [copy_libraries, samcon]
+
+- name: Display SAMCON copy errors (if any)
+  ansible.builtin.debug:
+    msg: "SAMCON copy warnings/errors: {{ copy_samcon_result.stderr_lines }}"
+  when:
+    - copy_samcon_result.stderr_lines is defined
+    - copy_samcon_result.stderr_lines | length > 0
+  tags: [copy_libraries, samcon]
+
+- name: Copy SAMSRCN library {{ ibmi_library_count }} time(s) (base SAMSRC)
+  ansible.builtin.shell: |
+    export PATH=/QOpenSys/usr/bin:/QOpenSys/pkgs/bin:$PATH
+    {{ ibmi_setup_scripts_dir }}/3_copy_lib_n_times.sh \
+      --from SAMSRCN \
+      --range 1 {{ ibmi_library_count }} \
+      --base SAMSRC
+  args:
+    executable: /QOpenSys/pkgs/bin/bash
+  register: copy_samsrcn_result
+  changed_when: copy_samsrcn_result.rc == 0
+  failed_when: copy_samsrcn_result.rc != 0
+  tags: [copy_libraries, samsrcn]
+
+- name: Display SAMSRCN copy output
+  ansible.builtin.debug:
+    msg: "{{ copy_samsrcn_result.stdout_lines }}"
+  when: copy_samsrcn_result.stdout_lines is defined and copy_samsrcn_result.stdout_lines | length > 0
+  tags: [copy_libraries, samsrcn]
+
+- name: Display SAMSRCN copy errors (if any)
+  ansible.builtin.debug:
+    msg: "SAMSRCN copy warnings/errors: {{ copy_samsrcn_result.stderr_lines }}"
+  when:
+    - copy_samsrcn_result.stderr_lines is defined
+    - copy_samsrcn_result.stderr_lines | length > 0
+  tags: [copy_libraries, samsrcn]
+
+- name: Display library copy summary
+  ansible.builtin.debug:
+    msg:
+      - "=== LIBRARY COPY COMPLETED ==="
+      - "SAMCON  -> SAMCO1 ... SAMCO{{ ibmi_library_count }}  (rc={{ copy_samcon_result.rc }})"
+      - "SAMSRCN -> SAMSRC1 ... SAMSRC{{ ibmi_library_count }} (rc={{ copy_samsrcn_result.rc }})"
+  tags: [copy_libraries]
+
+# Made with Bob

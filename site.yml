@@ -176,4 +176,33 @@
         mode: '0644'
       tags: always
 
+# ============================================================================
+# PLAY 3: Copy Libraries - Prompt for count then copy SAMCOn / SAMSRCn
+# ============================================================================
+- name: Copy IBM i Libraries (SAMCOn / SAMSRCn)
+  hosts: ibmi_servers
+  gather_facts: false
+  become: false
+  vars:
+    ansible_python_interpreter: /QOpenSys/pkgs/bin/python3.9
+  vars_prompt:
+    - name: ibmi_library_count
+      prompt: "How many IBM i libraries are needed? (enter a positive integer)"
+      private: false
+  environment:
+    PATH: "/QOpenSys/pkgs/bin:{{ ansible_env.PATH | default('') }}"
+
+  pre_tasks:
+    - name: Display library copy phase information
+      ansible.builtin.debug:
+        msg:
+          - "=== LIBRARY COPY PHASE ==="
+          - "Target Host: {{ inventory_hostname }}"
+          - "Libraries to create: {{ ibmi_library_count }}"
+      tags: always
+
+  roles:
+    - role: ibmi_copy_libraries
+      tags: [copy_libraries]
+
 # Made with Bob

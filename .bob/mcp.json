@@ -6,7 +6,7 @@
       "headers": {
         "Bob-Marketplace-Token": "bob-marketplace-local"
       },
-      "disabled": false,
+      "disabled": true,
       "alwaysAllow": [
         "search_assets",
         "get_asset",

@@ -1,0 +1,11 @@
+---
+# Role: ibmi_copy_libraries
+# Purpose: Copy SAMCOn and SAMSRCn library templates n times on the IBM i LPAR
+
+# Number of library copies to create (overridden by the play's vars_prompt)
+ibmi_library_count: 1
+
+# Base directory for the setup scripts (relative to the cloned repository root)
+ibmi_setup_scripts_dir: "{{ repository_dest }}/setup"
+
+# Made with Bob
