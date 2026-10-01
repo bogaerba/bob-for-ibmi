@@ -21,6 +21,11 @@ ibmi_reservations.csv
 ibmi_reservations.xlsx
 techzone-key.txt
 
+# Miscellaneous
+participants.csv
+participants_mailing.csv
+mailing.docx
+
 
 # Bob
 .bob/mcp.json

@@ -1,0 +1,1 @@
+please create 10 new IBM i LPARs, type Pilot, on Techzone with opportunity ID 006gR000004NW3LQAW in region eu-de, and the requests need to be named LPAR1 through LPAR9. Please use this environment: https://techzone.ibm.com/collection/69caf21433fe65185ca16a84?platform=69caf32c33fe65185ca16a96
